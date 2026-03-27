@@ -2,7 +2,7 @@
 
 ## Tech Stack
 
-- **Backend**: Spring Boot 3.x + Spring Security + MyBatis-Plus
+- **Backend**: Spring Boot 3.x + Kotlin + Spring Security + MyBatis-Plus
 - **Frontend**: Vue 3 + Vite + Pinia + Vue Router + Tailwind CSS v3 + vue-i18n
 - **PDF Renderer（Phase 3）**: Internal Node.js service + Puppeteer
 - **i18n**: 英文（en）、簡中（zh-CN）、繁中（zh-TW），前端 vue-i18n，後端 message source 分離
@@ -25,6 +25,15 @@
 3. **API versioning**: `/api/v1/...`，未來 Flutter 可直接呼叫
 4. **Public CV**: 短期用 Vue CSR 渲染 `/u/{username}`，未來 Flutter 用 WebView 或原生渲染
 5. **PDF 匯出分層**: Spring 僅負責權限、扣款、審計與簽發短期 token；print route 負責畫面；renderer service 只做 PDF render
+6. **Template 單一渲染入口**: editor preview、public page、print page 全部共用同一個 template registry 與 renderer wrapper
+
+### Backend 實作規範
+
+- 後端原始碼統一使用 Kotlin，路徑固定為 `src/main/kotlin`
+- 所有 `*Service` 一律拆成 `interface` + `impl`；Controller 只依賴 service interface
+- Service 命名規則：`FooService.kt` + `impl/FooServiceImpl.kt`
+- 一律使用 constructor injection，不使用 field injection
+- `Util`、`Config`、`Mapper`、`Controller` 可直接用 concrete class，不強制抽 interface
 
 ---
 
@@ -298,6 +307,11 @@ Index: `credit_transactions_user_id_idx`、`credit_transactions_user_created_idx
 { "en": "Minimal", "zh-CN": "简约", "zh-TW": "簡約" }
 ```
 
+規則：
+- `templates.component_key` 是前後端共用的穩定 contract key，必須和前端 `templateRegistry` 的 key 完全一致
+- `templates` table 只負責商業 metadata（名稱、成本、啟用狀態、排序），不負責決定實際 import 路徑
+- 新增 template 時禁止在 editor / public / print 各自寫 switch-case；統一由 registry resolve component
+
 初始 seed data:
 
 | component_key | display_name_i18n | credit_cost |
@@ -305,6 +319,15 @@ Index: `credit_transactions_user_id_idx`、`credit_transactions_user_created_idx
 | minimal | `{"en":"Minimal","zh-CN":"简约","zh-TW":"簡約"}` | 0 |
 | sidebar | `{"en":"Sidebar","zh-CN":"侧边栏","zh-TW":"側邊欄"}` | 0 |
 | modern | `{"en":"Modern","zh-CN":"现代","zh-TW":"現代"}` | 5 |
+
+### Template 擴充原則
+
+- 單一來源：`src/components/cv-templates/templateRegistry.js`
+- 單一渲染入口：`src/components/cv-templates/CvTemplateRenderer.vue`
+- 單一 props contract：所有 template component 只接收 `{ cv, sections, mode }`
+- `mode` 先定義為 `editor-preview | public | print`，讓同一個 template 可因應列印微調，但不分叉成不同 component
+- onboarding、editor、public、print 頁面都只吃 `templateKey`，不可直接 import 特定 template component
+- 若 `templateKey` 在 DB 存在但前端 registry 缺失，統一 fallback 到 `MissingTemplate.vue` 並記錄 error log
 
 ---
 
@@ -406,15 +429,15 @@ Index: `credit_transactions_user_id_idx`、`credit_transactions_user_created_idx
 
 #### Backend
 
-- [ ] Spring Boot 3.x 專案初始化（`me.hker` package）
+- [ ] Spring Boot 3.x + Kotlin 專案初始化（`me.hker` package）
 - [ ] PostgreSQL + Flyway 設定
 - [ ] 全部 Flyway migration scripts（V1~V9，所有 table 一次建好含 seed data）
-- [ ] `common/` — `BaseEntity`, `R.java`, `GlobalExceptionHandler`, `I18nMessageHelper`
+- [ ] `common/` — `BaseEntity`, `R.kt`, `GlobalExceptionHandler`, `I18nMessageHelper`
 - [ ] `config/` — `SecurityConfig`, `MyBatisPlusConfig`, `StaticResourceConfig`, `AppBusinessProperties`
-- [ ] `module/auth/` — `AuthController`, `AuthService`, `JwtUtil`, `JwtAuthFilter`
-- [ ] `module/user/` — `User` entity, `UserMapper`
-- [ ] `module/credit/` — `CreditService`（核心扣款/加值邏輯，固定金額全由 properties 注入）
-- [ ] `module/template/` — `Template` entity, `TemplateMapper`（讀取 seed data）
+- [ ] `module/auth/` — `AuthController`, `AuthService`, `AuthServiceImpl`, `JwtUtil`, `JwtAuthFilter`
+- [ ] `module/user/` — `User` entity, `UserMapper`, `UserService`, `UserServiceImpl`
+- [ ] `module/credit/` — `CreditService`, `CreditServiceImpl`（核心扣款/加值邏輯，固定金額全由 properties 注入）
+- [ ] `module/template/` — `Template` entity, `TemplateMapper`, `TemplateService`, `TemplateServiceImpl`（讀取 seed data）
 - [ ] i18n 資源檔 — `messages.properties`, `messages_zh_CN.properties`, `messages_zh_TW.properties`
 - [ ] `application.yml` — DB 連線、JWT secret、upload path、CORS 設定
 
@@ -454,14 +477,18 @@ Name: token, HttpOnly: true, Secure: true(prod)/false(dev), SameSite: Lax, Path:
 ```
 
 **JwtUtil**：
-```java
+```kotlin
 @Component
-public class JwtUtil {
-    @Value("${jwt.secret}") private String secret;
-    private static final long EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000;
-    public String generateToken(Long userId, String email);
-    public Long getUserId(String token);
-    public boolean validateToken(String token);
+class JwtUtil(
+    @Value("\${jwt.secret}") private val secret: String,
+) {
+    companion object {
+        private const val EXPIRATION_MS = 7L * 24 * 60 * 60 * 1000
+    }
+
+    fun generateToken(userId: Long, email: String): String = TODO()
+    fun getUserId(token: String): Long = TODO()
+    fun validateToken(token: String): Boolean = TODO()
 }
 ```
 
@@ -482,11 +509,11 @@ public class JwtUtil {
 
 #### Backend
 
-- [ ] `module/onboarding/` — `OnboardingController`, `OnboardingService`
-- [ ] `module/upload/` — `UploadController`, `LocalStorageService`
+- [ ] `module/onboarding/` — `OnboardingController`, `OnboardingService`, `OnboardingServiceImpl`
+- [ ] `module/upload/` — `UploadController`, `StorageService`, `LocalStorageService`
 - [ ] `module/user/UserController` — `check-username` endpoint
 - [ ] `module/template/TemplateController` — `GET /templates`（從 DB 讀取 + i18n）
-- [ ] `module/cv/` — `Cv` entity, `CvMapper`（onboarding step3 建立第一份 CV 用）
+- [ ] `module/cv/` — `Cv` entity, `CvMapper`, `CvService`, `CvServiceImpl`（onboarding step3 建立第一份 CV 用）
 
 #### Onboarding API 實作
 
@@ -573,16 +600,14 @@ router.beforeEach(async (to) => {
 #### File Upload 設計
 
 **後端**：
-```java
+```kotlin
 @Configuration
-public class StaticResourceConfig implements WebMvcConfigurer {
-    @Value("${app.upload.path:./data/uploads}")
-    private String uploadPath;
-
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+class StaticResourceConfig(
+    @Value("\${app.upload.path:./data/uploads}") private val uploadPath: String,
+) : WebMvcConfigurer {
+    override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:" + uploadPath + "/");
+            .addResourceLocations("file:$uploadPath/")
     }
 }
 ```
@@ -627,14 +652,15 @@ spring:
 #### Backend
 
 - [ ] `module/cv/CvController` — CV CRUD（完整實作，含 credit 扣款）
-- [ ] `module/cv/CvService` — 建立 CV 扣 `CREATE_CV` credit、切換 template 扣 `SWITCH_TEMPLATE` credit
+- [ ] `module/cv/CvService` + `CvServiceImpl` — 建立 CV 扣 `CREATE_CV` credit、切換 template 扣 `SWITCH_TEMPLATE` credit
 - [ ] `module/cv/PublicCvController` — 公開 CV API（Phase 4 實作前端）
 - [ ] `module/credit/CreditController` — balance + transactions API
+- [ ] `module/credit/CreditService` + `CreditServiceImpl` — balance、ledger、扣款
 - [ ] `module/reward/RewardController` — reward summary + redeem code API
-- [ ] `module/reward/RewardService` — redemption orchestration（事務、ledger、summary）
+- [ ] `module/reward/RewardService` + `RewardServiceImpl` — redemption orchestration（事務、ledger、summary）
 - [ ] `module/reward/RewardCodeResolver` — normalize + resolve promo / invite code
 - [ ] `module/export/PdfExportController` — PDF export API
-- [ ] `module/export/PdfExportService` — export token、renderer client、credit 扣款整合
+- [ ] `module/export/PdfExportService` + `PdfExportServiceImpl` — export token、renderer client、credit 扣款整合
 - [ ] `integration/pdf/PdfRendererClient` — 呼叫內部 pdf-renderer service
 
 #### CV API 實作
@@ -681,19 +707,64 @@ spring:
 - Service 禁止直接寫死 `50 / 10 / 15 / 20` 等數值，統一走 `AppBusinessProperties`
 
 **CreditService**：
-```java
+```kotlin
+interface CreditService {
+    fun hasEnoughCredits(userId: Long, amount: Int): Boolean
+
+    @Transactional
+    fun deduct(
+        userId: Long,
+        amount: Int,
+        type: String,
+        referenceType: String?,
+        referenceId: Long?,
+        description: String?,
+    )
+
+    @Transactional
+    fun credit(
+        userId: Long,
+        amount: Int,
+        type: String,
+        referenceType: String?,
+        referenceId: Long?,
+        description: String?,
+    )
+
+    fun getBalance(userId: Long): Int
+    fun getTransactions(userId: Long, page: Int, size: Int): IPage<CreditTransaction>
+}
+
 @Service
-public class CreditService {
-    public boolean hasEnoughCredits(Long userId, int amount);
+class CreditServiceImpl(
+    private val userMapper: UserMapper,
+    private val creditTransactionMapper: CreditTransactionMapper,
+    private val businessProperties: AppBusinessProperties,
+) : CreditService {
+    override fun hasEnoughCredits(userId: Long, amount: Int): Boolean = TODO()
 
     @Transactional
-    public void deduct(Long userId, int amount, String type, String referenceType, Long referenceId, String description);
+    override fun deduct(
+        userId: Long,
+        amount: Int,
+        type: String,
+        referenceType: String?,
+        referenceId: Long?,
+        description: String?,
+    ) = Unit
 
     @Transactional
-    public void credit(Long userId, int amount, String type, String referenceType, Long referenceId, String description);
+    override fun credit(
+        userId: Long,
+        amount: Int,
+        type: String,
+        referenceType: String?,
+        referenceId: Long?,
+        description: String?,
+    ) = Unit
 
-    public int getBalance(Long userId);
-    public IPage<CreditTransaction> getTransactions(Long userId, int page, int size);
+    override fun getBalance(userId: Long): Int = TODO()
+    override fun getTransactions(userId: Long, page: Int, size: Int): IPage<CreditTransaction> = TODO()
 }
 ```
 
@@ -733,15 +804,17 @@ public class CreditService {
 - [ ] `views/dashboard/DashboardView.vue` — CV 列表 + 新建按鈕 + credit 餘額 + redeem code 區塊 + invite code 卡片
 - [ ] `views/editor/CvEditorView.vue` — section editor + live preview + export PDF
 - [ ] `views/print/PrintCvView.vue` — PDF 專用列印頁，重用 template registry
+- [ ] `components/cv-templates/CvTemplateRenderer.vue` — 統一 template renderer wrapper
+- [ ] `components/cv-templates/MissingTemplate.vue` — registry 缺失時的 fallback
 - [ ] `components/sections/` — SummarySection, ExperienceSection, EducationSection, SkillsSection
 - [ ] `components/cv-templates/MinimalTemplate.vue` — 第一個 template
-- [ ] `components/cv-templates/templateRegistry.js` — auto-import + dynamic component loading
+- [ ] `components/cv-templates/templateRegistry.js` — manifest + dynamic import + fallback resolve
 
 #### CV Editor 資料流
 
 1. 進入 editor → `GET /api/v1/me/cvs/{id}` 取得 CV + sections
 2. 用戶編輯 section → 前端即時更新 local state（Pinia）
-3. Live preview 用 `<component :is="templateComponent">` 渲染，資料從 Pinia 讀取
+3. Live preview 統一透過 `CvTemplateRenderer` 依 `templateKey` 渲染，資料從 Pinia 讀取
 4. 用戶點「儲存」→ `PUT /api/v1/me/cvs/{id}/sections` 一次送出所有 sections（整份取代）
 5. Section 的排序用 drag & drop 修改 `sort_order`
 6. 用戶點「匯出 PDF」→ `POST /api/v1/me/cvs/{id}/export/pdf` → 後端產 PDF 並回傳下載
@@ -749,10 +822,17 @@ public class CreditService {
 #### Template 機制
 
 **新增 Template 流程**：
-1. 在 `src/components/cv-templates/` 新增 Vue component，props 接收 `{ cv, sections }`
-2. 在 `templateRegistry.js` 註冊（`defineAsyncComponent`）
-3. 在 DB `templates` table 新增一筆 seed
-4. 前端 template 列表自動從 API 取得，無需改前端邏輯
+1. 在 `src/components/cv-templates/` 新增 Vue component，props 固定接收 `{ cv, sections, mode }`
+2. 在 `templateRegistry.js` 新增 manifest entry：`key`, `loader`, `supportsPrint`
+3. 如需縮圖，新增 preview asset
+4. 在 DB `templates` table 新增一筆 seed，`component_key` 必須與 registry `key` 完全一致
+5. editor preview、public 頁、print 頁都透過 `CvTemplateRenderer` 自動生效，不需額外補 route-specific 邏輯
+
+**維護規範**：
+- 禁止在 `CvEditorView.vue`、`PublicCvView.vue`、`PrintCvView.vue` 直接 import 單一 template component
+- 新增 template 允許修改的前端位置應盡量限制在：template component、registry、preview asset
+- 成本、排序、上下架由 DB 控制；視覺渲染由前端 registry 控制，責任分離
+- 至少有一個 contract check 驗證 `templates.component_key` 與前端 registry key 一致
 
 #### 驗收標準
 
@@ -770,6 +850,8 @@ public class CreditService {
 - [ ] Dashboard 顯示自己的 invite code 與邀請成果摘要
 - [ ] PDF 匯出成功時扣 15 credits，餘額不足回傳 402
 - [ ] PDF render 失敗時不扣款
+- [ ] 新增一個 template 時，不需改 editor/public/print 三個 view 的渲染分支
+- [ ] DB 回傳的每個 `templateKey` 都能被 `templateRegistry` resolve；缺失時有 fallback 與錯誤紀錄
 
 ---
 
@@ -799,7 +881,7 @@ public class CreditService {
 #### Public CV 渲染
 
 - `/u/{username}` 對應 `PublicProfileView.vue`，顯示使用者公開資訊與公開 CV 清單
-- `/u/{username}/{slug}` 對應 `PublicCvView.vue`，根據 API 回傳的 `templateKey` 動態載入對應 component，props 傳入 CV 資料
+- `/u/{username}/{slug}` 對應 `PublicCvView.vue`，統一透過 `CvTemplateRenderer` 根據 API 回傳的 `templateKey` 動態渲染
 - 短期純 CSR，未來如需 SEO 可改用 Nuxt 或 SSR 方案
 
 #### 驗收標準
@@ -809,6 +891,7 @@ public class CreditService {
 - [ ] 三個 template（minimal, sidebar, modern）皆可正確渲染
 - [ ] 未登入用戶也可瀏覽公開 CV
 - [ ] 公開 CV 使用對應 template component 動態渲染
+- [ ] 新增 template 後，public page 不需額外增加 if/else 或 switch-case
 
 ---
 
@@ -941,68 +1024,98 @@ error.export.pdf_failed=PDF 匯出失敗，請稍後再試
 
 ## 專案結構（完整參考）
 
-### Backend（Spring Boot + MyBatis-Plus）
+### Backend（Spring Boot + Kotlin + MyBatis-Plus）
 
 ```
-src/main/java/me/hker/
+src/main/kotlin/me/hker/
 ├── config/
-│   ├── SecurityConfig.java           # JWT filter chain, CORS whitelist
-│   ├── MyBatisPlusConfig.java        # pagination plugin, logic delete
-│   ├── StaticResourceConfig.java     # /uploads/** 本地靜態資源
-│   └── AppBusinessProperties.java    # signup/create/export/invite rewards
+│   ├── SecurityConfig.kt             # JWT filter chain, CORS whitelist
+│   ├── MyBatisPlusConfig.kt          # pagination plugin, logic delete
+│   ├── StaticResourceConfig.kt       # /uploads/** 本地靜態資源
+│   └── AppBusinessProperties.kt      # signup/create/export/invite rewards
 ├── common/
-│   ├── BaseEntity.java               # id, created_at, updated_at, is_deleted
-│   ├── R.java                        # 統一回傳格式 { code, message, data }
-│   ├── GlobalExceptionHandler.java
-│   └── I18nMessageHelper.java        # 封裝 MessageSource，根據 Accept-Language 取訊息
+│   ├── BaseEntity.kt                 # id, created_at, updated_at, is_deleted
+│   ├── R.kt                          # 統一回傳格式 { code, message, data }
+│   ├── GlobalExceptionHandler.kt
+│   └── I18nMessageHelper.kt          # 封裝 MessageSource，根據 Accept-Language 取訊息
 ├── module/
 │   ├── auth/
-│   │   ├── AuthController.java       # /api/v1/auth/**
-│   │   ├── AuthService.java
-│   │   ├── JwtUtil.java              # generate / parse / validate token
-│   │   └── JwtAuthFilter.java        # OncePerRequestFilter, Cookie 讀 token
+│   │   ├── AuthController.kt         # /api/v1/auth/**
+│   │   ├── JwtUtil.kt                # generate / parse / validate token
+│   │   ├── JwtAuthFilter.kt          # OncePerRequestFilter, Cookie 讀 token
+│   │   └── service/
+│   │       ├── AuthService.kt
+│   │       └── impl/
+│   │           └── AuthServiceImpl.kt
 │   ├── user/
-│   │   ├── UserController.java       # /api/v1/users/check-username
-│   │   ├── UserService.java
-│   │   ├── UserMapper.java           # BaseMapper<User>
-│   │   └── User.java
+│   │   ├── UserController.kt         # /api/v1/users/check-username
+│   │   ├── entity/User.kt
+│   │   ├── mapper/UserMapper.kt      # BaseMapper<User>
+│   │   └── service/
+│   │       ├── UserService.kt
+│   │       └── impl/
+│   │           └── UserServiceImpl.kt
 │   ├── onboarding/
-│   │   ├── OnboardingController.java # /api/v1/onboarding/**
-│   │   └── OnboardingService.java
+│   │   ├── OnboardingController.kt   # /api/v1/onboarding/**
+│   │   └── service/
+│   │       ├── OnboardingService.kt
+│   │       └── impl/
+│   │           └── OnboardingServiceImpl.kt
 │   ├── cv/
-│   │   ├── CvController.java         # /api/v1/me/cvs/**
-│   │   ├── PublicCvController.java   # /api/v1/public/**
-│   │   ├── CvService.java
-│   │   ├── CvMapper.java
-│   │   ├── CvSectionMapper.java
-│   │   ├── Cv.java
-│   │   └── CvSection.java
+│   │   ├── CvController.kt           # /api/v1/me/cvs/**
+│   │   ├── PublicCvController.kt     # /api/v1/public/**
+│   │   ├── entity/Cv.kt
+│   │   ├── entity/CvSection.kt
+│   │   ├── mapper/CvMapper.kt
+│   │   ├── mapper/CvSectionMapper.kt
+│   │   └── service/
+│   │       ├── CvService.kt
+│   │       └── impl/
+│   │           └── CvServiceImpl.kt
 │   ├── template/
-│   │   ├── TemplateController.java   # /api/v1/templates
-│   │   ├── TemplateService.java
-│   │   ├── TemplateMapper.java
-│   │   └── Template.java
+│   │   ├── TemplateController.kt     # /api/v1/templates
+│   │   ├── entity/Template.kt
+│   │   ├── mapper/TemplateMapper.kt
+│   │   └── service/
+│   │       ├── TemplateService.kt
+│   │       └── impl/
+│   │           └── TemplateServiceImpl.kt
 │   ├── credit/
-│   │   ├── CreditController.java     # /api/v1/me/credits/**
-│   │   ├── CreditService.java        # 扣款、加值、查詢
-│   │   ├── CreditTransactionMapper.java
-│   │   └── CreditTransaction.java
+│   │   ├── CreditController.kt       # /api/v1/me/credits/**
+│   │   ├── entity/CreditTransaction.kt
+│   │   ├── mapper/CreditTransactionMapper.kt
+│   │   └── service/
+│   │       ├── CreditService.kt      # 扣款、加值、查詢
+│   │       └── impl/
+│   │           └── CreditServiceImpl.kt
 │   ├── reward/
-│   │   ├── RewardController.java     # /api/v1/me/rewards/**
-│   │   ├── RewardService.java
-│   │   ├── RewardCodeResolver.java
-│   │   ├── PromoCodeMapper.java
-│   │   ├── PromoCodeRedemptionMapper.java
-│   │   └── InviteCodeRedemptionMapper.java
+│   │   ├── RewardController.kt       # /api/v1/me/rewards/**
+│   │   ├── RewardCodeResolver.kt
+│   │   ├── entity/PromoCode.kt
+│   │   ├── entity/PromoCodeRedemption.kt
+│   │   ├── entity/InviteCodeRedemption.kt
+│   │   ├── mapper/PromoCodeMapper.kt
+│   │   ├── mapper/PromoCodeRedemptionMapper.kt
+│   │   ├── mapper/InviteCodeRedemptionMapper.kt
+│   │   └── service/
+│   │       ├── RewardService.kt
+│   │       └── impl/
+│   │           └── RewardServiceImpl.kt
 │   ├── export/
-│   │   ├── PdfExportController.java  # /api/v1/me/cvs/*/export/pdf
-│   │   └── PdfExportService.java
+│   │   ├── PdfExportController.kt    # /api/v1/me/cvs/*/export/pdf
+│   │   └── service/
+│   │       ├── PdfExportService.kt
+│   │       └── impl/
+│   │           └── PdfExportServiceImpl.kt
 │   ├── integration/
 │   │   └── pdf/
-│   │       └── PdfRendererClient.java
+│   │       └── PdfRendererClient.kt
 │   └── upload/
-│       ├── UploadController.java     # /api/v1/upload
-│       └── LocalStorageService.java  # saves to ./data/uploads/{userId}/
+│       ├── UploadController.kt       # /api/v1/upload
+│       └── service/
+│           ├── StorageService.kt
+│           └── impl/
+│               └── LocalStorageService.kt  # saves to ./data/uploads/{userId}/
 └── resources/
     ├── mapper/                       # MyBatis XML mapper files（複雜查詢用）
     ├── messages.properties           # i18n 預設（en）
@@ -1068,7 +1181,9 @@ src/
 │       └── PublicCvView.vue        # /u/{username}/{slug} — dynamic template render
 ├── components/
 │   ├── cv-templates/
-│   │   ├── templateRegistry.js     # auto-import all templates
+│   │   ├── CvTemplateRenderer.vue  # single renderer for editor/public/print
+│   │   ├── MissingTemplate.vue     # fallback when registry key is missing
+│   │   ├── templateRegistry.js     # manifest + dynamic imports + fallback
 │   │   ├── MinimalTemplate.vue
 │   │   ├── SidebarTemplate.vue
 │   │   └── ModernTemplate.vue      # 新增 template 只需加 Vue component + DB seed
