@@ -67,4 +67,16 @@ class TemplateServiceTest {
         assertEquals("Modern", results.first().displayName)
         assertEquals("Modern layout", results.first().description)
     }
+
+    @Test
+    fun `existsActiveTemplate returns mapper existence result`() {
+        val active = Template().apply {
+            componentKey = "modern"
+        }
+        `when`(mapper.selectActiveTemplateByKey("modern")).thenReturn(active)
+        `when`(mapper.selectActiveTemplateByKey("ghost")).thenReturn(null)
+
+        assertEquals(true, service.existsActiveTemplate("modern"))
+        assertEquals(false, service.existsActiveTemplate("ghost"))
+    }
 }

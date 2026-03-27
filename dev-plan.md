@@ -46,9 +46,14 @@
 - 本地 Docker 開發環境可用：`db`、`backend`、`frontend`、`pdf-renderer` 皆為 healthy
 - Reward / template MVP slice 已落地目前核心流程：template 列表、dashboard reward summary、promo / invite code redemption、credit balance / transactions 均已有實作
 - Backend controller 回應契約已收斂為 typed DTO，auth / credit / template 不再用 ad-hoc `Map<String, Any?>`
-- `CurrentUserResolver` 已集中目前開發期的 current-user fallback，移除多處分散的 `userId ?: 1L`
+- Auth controller/runtime 已切到 JWT cookie + Spring Security `SecurityContext` 取 current user，未登入的 protected API 會回 JSON `401`
 - Frontend reward / template 狀態已抽成 `useRewardCenter` 與 `useTemplateCatalog`，`DashboardView` 與 `Step3Template` 不再各自複製 fetch / filter 邏輯
 - Template 新增路徑已比原先更可維護：後端 `templates` table / API 負責商業 metadata，前端 `templateRegistry` / template component 負責渲染；`Dashboard` 與 onboarding step3 共用同一套 template catalog 載入邏輯
+- `CreditService` 已改成 DB atomic balance adjustment，避免 `credit_balance` 的 read-modify-write race condition
+- `RewardServiceImpl` 已縮成 orchestration facade，summary / code redemption / promo redemption / invite redemption 已拆成獨立 service interface + impl
+- Frontend 已補 template contract check，直接比對 backend migration 中的 `templates.component_key` seed
+- Backend 已補 PostgreSQL + Flyway Testcontainers integration test，fresh DB bootstrap 不再只靠 mock-heavy 測試
+- Flyway 對 fresh DB 已補 `B11` baseline migration；既有 `V1`-`V11` 鏈保留給已存在的 dev DB 相容使用
 
 ### 驗證結果
 
@@ -58,12 +63,9 @@
 
 ### 已接受但延後處理的技術債
 
-- Auth / security 仍是「目標架構」與「目前開發實作」並存：規劃上是 JWT + Cookie，但目前 controller / 測試仍保留 `X-User-Id` + `CurrentUserResolver` 的 dev fallback
-- Flyway migration 歷史仍不健康：`V1` 到 `V9` 多為 placeholder，實際 reward / template / users bootstrap 主要落在 `V10__bootstrap_reward_and_template_schema.sql`
-- `CreditService` 目前仍是 read-modify-write 更新 `users.credit_balance`，尚未加鎖或版本控制；未來 credit 流量增加時有 race condition 風險
-- `RewardServiceImpl` 仍承擔 code resolve、redemption policy、ledger side effect、response shaping 等多重責任；新增 reward type / admin 流程前應先拆邊界
-- Template 仍是跨 stack 雙來源：後端 seed / DB 管 metadata，前端 `templateRegistry` 管 renderer；在 template 數量變多前需要補 contract check，避免 registry key 與 DB `component_key` 漂移
-- 測試仍偏 mock-heavy，且 test profile 未打開真實 Flyway / PostgreSQL integration；migration 與 SQL runtime 問題仍可能在 Docker 階段才暴露
+- Auth persisted domain 仍未完成：雖然 JWT cookie / filter chain 已啟用，但 `AuthServiceImpl` 目前仍回傳 demo user，尚未接上真實 user persistence
+- Flyway 歷史版本鏈仍保留 `V1`-`V9` placeholder 以維持既有 DB 相容；新環境已改走 `B11` baseline，但後續 migration review 仍應以 baseline + 新版本增量為主
+- 單元測試仍以 mock 為主體；雖已補關鍵 PostgreSQL integration coverage，但尚未全面涵蓋 reward / template / auth 的 DB-backed flow
 
 ---
 
@@ -461,7 +463,7 @@ Index: `credit_transactions_user_id_idx`、`credit_transactions_user_created_idx
 
 - [ ] Spring Boot 3.x + Kotlin 專案初始化（`me.hker` package）
 - [ ] PostgreSQL + Flyway 設定
-- [ ] 全部 Flyway migration scripts（V1~V9，所有 table 一次建好含 seed data）
+- [ ] 保留既有 `V1` 到 `V11` 相容鏈，並以 baseline migration 維護 fresh DB bootstrap
 - [ ] `common/` — `BaseEntity`, `R.kt`, `GlobalExceptionHandler`, `I18nMessageHelper`
 - [ ] `config/` — `SecurityConfig`, `MyBatisPlusConfig`, `StaticResourceConfig`, `AppBusinessProperties`
 - [ ] `module/auth/` — `AuthController`, `AuthService`, `AuthServiceImpl`, `JwtUtil`, `JwtAuthFilter`

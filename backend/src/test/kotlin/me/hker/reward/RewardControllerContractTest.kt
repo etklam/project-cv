@@ -1,6 +1,7 @@
 package me.hker.reward
 
-import me.hker.common.DefaultCurrentUserResolver
+import me.hker.common.CurrentUserResolver
+import me.hker.module.auth.JwtAuthFilter
 import me.hker.module.reward.RewardController
 import me.hker.module.reward.dto.InviteRedemptionDto
 import me.hker.module.reward.dto.InviteStatsDto
@@ -13,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
@@ -21,15 +21,21 @@ import org.springframework.test.web.servlet.post
 
 @WebMvcTest(RewardController::class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import(DefaultCurrentUserResolver::class)
 class RewardControllerContractTest(
     @Autowired private val mockMvc: MockMvc,
 ) {
     @MockBean
     private lateinit var rewardService: RewardService
 
+    @MockBean
+    private lateinit var currentUserResolver: CurrentUserResolver
+
+    @MockBean
+    private lateinit var jwtAuthFilter: JwtAuthFilter
+
     @Test
     fun `summary endpoint should follow unified response contract`() {
+        given(currentUserResolver.resolve(null)).willReturn(1L)
         given(rewardService.summary(1L)).willReturn(
             RewardSummaryDto(
                 balance = 70,
@@ -48,9 +54,7 @@ class RewardControllerContractTest(
             ),
         )
 
-        mockMvc.get("/api/v1/me/rewards/summary") {
-            header("X-User-Id", 1L)
-        }.andExpect {
+        mockMvc.get("/api/v1/me/rewards/summary").andExpect {
             status { isOk() }
             jsonPath("$.code") { value(0) }
             jsonPath("$.message") { value("OK") }
@@ -64,6 +68,7 @@ class RewardControllerContractTest(
 
     @Test
     fun `redeem endpoint should return redemption result in unified response contract`() {
+        given(currentUserResolver.resolve(null)).willReturn(1L)
         given(rewardService.redeem(1L, "welcome2026")).willReturn(
             RewardRedeemResultDto(
                 type = "PROMO_CODE",
@@ -77,7 +82,6 @@ class RewardControllerContractTest(
         )
 
         mockMvc.post("/api/v1/me/rewards/redeem") {
-            header("X-User-Id", 1L)
             contentType = MediaType.APPLICATION_JSON
             content = """{"code":"welcome2026"}"""
         }.andExpect {

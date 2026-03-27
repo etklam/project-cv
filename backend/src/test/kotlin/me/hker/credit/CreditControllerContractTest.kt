@@ -2,6 +2,7 @@ package me.hker.credit
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page
 import me.hker.common.CurrentUserResolver
+import me.hker.module.auth.JwtAuthFilter
 import me.hker.module.credit.CreditController
 import me.hker.module.credit.entity.CreditTransaction
 import me.hker.module.credit.service.CreditService
@@ -23,6 +24,9 @@ class CreditControllerContractTest(@Autowired private val mockMvc: MockMvc) {
 
     @MockBean
     private lateinit var currentUserResolver: CurrentUserResolver
+
+    @MockBean
+    private lateinit var jwtAuthFilter: JwtAuthFilter
 
     @Test
     fun `balance endpoint returns typed DTO`() {

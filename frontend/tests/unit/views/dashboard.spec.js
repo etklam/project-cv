@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import DashboardView from "@/views/dashboard/DashboardView.vue";
 import { getRewardSummary, redeemCode } from "@/api/reward";
 import { listTemplates } from "@/api/template";
+import { listCvs } from "@/api/cv";
 
 vi.mock("@/api/reward", () => ({
   getRewardSummary: vi.fn(),
@@ -11,6 +12,10 @@ vi.mock("@/api/reward", () => ({
 
 vi.mock("@/api/template", () => ({
   listTemplates: vi.fn(),
+}));
+
+vi.mock("@/api/cv", () => ({
+  listCvs: vi.fn(),
 }));
 
 vi.mock("@/components/templates/TemplateCard.vue", () => ({
@@ -39,6 +44,7 @@ describe("DashboardView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(listTemplates).mockResolvedValue({ templates: [] });
+    vi.mocked(listCvs).mockResolvedValue({ cvs: [] });
   });
 
   it("loads summary and renders balance details", async () => {
@@ -76,5 +82,36 @@ describe("DashboardView", () => {
     expect(wrapper.get("[data-testid=redeem-message]").text()).toContain("Applied reward");
     expect(wrapper.findAll("[data-testid=promo-record]")).toHaveLength(1);
     expect(wrapper.get("[data-testid=promo-redemption-count]").text()).toContain("2");
+  });
+
+  it("renders my cv list with public slug badge", async () => {
+    vi.mocked(getRewardSummary).mockResolvedValue(summaryPayload);
+    vi.mocked(listCvs).mockResolvedValue({
+      cvs: [
+        {
+          id: 3,
+          title: "Backend Resume",
+          templateKey: "modern",
+          isPublic: true,
+          slug: "backend-resume",
+        },
+        {
+          id: 4,
+          title: "Private CV",
+          templateKey: "minimal",
+          isPublic: false,
+          slug: null,
+        },
+      ],
+    });
+
+    const wrapper = mount(DashboardView);
+    await flushPromises();
+
+    expect(listCvs).toHaveBeenCalled();
+    expect(wrapper.get("[data-testid=cvs-list]").exists()).toBe(true);
+    expect(wrapper.findAll("[data-testid=cv-title]")).toHaveLength(2);
+    expect(wrapper.findAll("[data-testid=cv-edit-link]")).toHaveLength(2);
+    expect(wrapper.get("[data-testid=cv-public-badge]").text()).toContain("backend-resume");
   });
 });

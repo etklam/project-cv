@@ -23,6 +23,9 @@ class TemplateServiceImpl(
         return templateMapper.selectActiveTemplates().map { toDto(it, locale) }
     }
 
+    override fun existsActiveTemplate(templateKey: String): Boolean =
+        templateMapper.selectActiveTemplateByKey(templateKey) != null
+
     private fun toDto(template: Template, locale: Locale): TemplateDto {
         val displayName = resolveLocalizedText(template.displayNameI18n, locale)
         val description = resolveLocalizedText(template.descriptionI18n, locale).ifBlank { displayName }

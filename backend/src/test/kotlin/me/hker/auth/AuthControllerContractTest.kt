@@ -1,6 +1,7 @@
 package me.hker.auth
 
 import me.hker.module.auth.AuthController
+import me.hker.module.auth.JwtAuthFilter
 import me.hker.module.auth.JwtUtil
 import me.hker.module.auth.dto.AuthUserDto
 import me.hker.module.auth.dto.ChangeLocaleRequest
@@ -28,6 +29,9 @@ class AuthControllerContractTest(@Autowired private val mockMvc: MockMvc) {
 
     @MockBean
     private lateinit var jwtUtil: JwtUtil
+
+    @MockBean
+    private lateinit var jwtAuthFilter: JwtAuthFilter
 
     @MockBean
     private lateinit var currentUserResolver: CurrentUserResolver

@@ -1,5 +1,6 @@
 package me.hker.template
 
+import me.hker.module.auth.JwtAuthFilter
 import me.hker.module.template.TemplateController
 import me.hker.module.template.dto.TemplateDto
 import me.hker.module.template.service.TemplateService
@@ -19,6 +20,9 @@ class TemplateControllerTest(
 ) {
     @MockBean
     private lateinit var templateService: TemplateService
+
+    @MockBean
+    private lateinit var jwtAuthFilter: JwtAuthFilter
 
     @Test
     fun `list templates returns response contract`() {

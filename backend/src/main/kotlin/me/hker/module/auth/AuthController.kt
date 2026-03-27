@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -50,19 +49,16 @@ class AuthController(
     }
 
     @GetMapping("/me")
-    fun me(
-        @RequestHeader(name = "X-User-Id", required = false) userId: Long?,
-    ): R<AuthUserResponse> {
-        val user = authService.me(currentUserResolver.resolve(userId))
+    fun me(): R<AuthUserResponse> {
+        val user = authService.me(currentUserResolver.resolve(null))
         return R.ok(AuthUserResponse(user = user))
     }
 
     @PutMapping("/change-locale")
     fun changeLocale(
-        @RequestHeader(name = "X-User-Id", required = false) userId: Long?,
         @RequestBody request: ChangeLocaleRequest,
     ): R<AuthUserResponse> {
-        val user = authService.changeLocale(currentUserResolver.resolve(userId), request)
+        val user = authService.changeLocale(currentUserResolver.resolve(null), request)
         return R.ok(AuthUserResponse(user = user))
     }
 }

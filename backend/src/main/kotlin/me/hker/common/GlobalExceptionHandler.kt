@@ -17,6 +17,13 @@ class GlobalExceptionHandler {
         return R.fail(400, ex.message ?: "bad request")
     }
 
+    @ExceptionHandler(ResourceNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleNotFound(ex: ResourceNotFoundException): R<Nothing> {
+        log.warn("Resource not found: {}", ex.message)
+        return R.fail(404, ex.message ?: "not found")
+    }
+
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleUnexpected(ex: Exception): R<Nothing> {

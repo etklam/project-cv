@@ -19,6 +19,14 @@ class UserServiceImpl(
                 .last("LIMIT 1"),
         )
 
+    override fun findByUsername(username: String): User? =
+        userMapper.selectOne(
+            QueryWrapper<User>()
+                .eq("username", username)
+                .eq("is_deleted", false)
+                .last("LIMIT 1"),
+        )
+
     override fun findByInviteCode(inviteCode: String): User? =
         userMapper.selectOne(
             QueryWrapper<User>()

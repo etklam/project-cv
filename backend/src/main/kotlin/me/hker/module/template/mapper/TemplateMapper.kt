@@ -16,4 +16,16 @@ interface TemplateMapper : BaseMapper<Template> {
         """,
     )
     fun selectActiveTemplates(): List<Template>
+
+    @Select(
+        """
+        SELECT *
+        FROM templates
+        WHERE component_key = #{templateKey}
+          AND is_active = true
+          AND is_deleted = false
+        LIMIT 1
+        """,
+    )
+    fun selectActiveTemplateByKey(templateKey: String): Template?
 }

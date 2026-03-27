@@ -28,3 +28,15 @@ Services:
 - Backend: `http://localhost:8080`
 - PostgreSQL: `localhost:5432`
 - PDF renderer: `http://localhost:3100/health`
+
+## Flyway
+
+Fresh databases bootstrap through `backend/src/main/resources/db/migration/B11__baseline_schema.sql`.
+Existing environments keep their historical `V1` to `V11` records unchanged to avoid checksum breakage.
+
+If you want to verify the clean bootstrap path locally, recreate the PostgreSQL volume before starting Docker again:
+
+```bash
+docker compose down -v
+docker compose up --build -d
+```

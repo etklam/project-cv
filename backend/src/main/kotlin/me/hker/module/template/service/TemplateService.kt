@@ -4,4 +4,5 @@ import me.hker.module.template.dto.TemplateDto
 
 interface TemplateService {
     fun listActiveTemplates(): List<TemplateDto>
+    fun existsActiveTemplate(templateKey: String): Boolean
 }
