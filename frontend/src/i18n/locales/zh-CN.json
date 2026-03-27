@@ -1,0 +1,17 @@
+{
+  "common": {
+    "save": "保存",
+    "cancel": "取消",
+    "creditBalance": "{count} 点 Credits"
+  },
+  "auth": {
+    "login": "登录",
+    "register": "注册"
+  },
+  "reward": {
+    "redeem": "兑换代码"
+  },
+  "export": {
+    "pdf": "导出 PDF"
+  }
+}

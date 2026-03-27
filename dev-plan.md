@@ -37,6 +37,36 @@
 
 ---
 
+## Current Progress（2026-03-28）
+
+此區塊是目前已驗證的實作快照；下方 Phase checklist 仍保留原始規劃拆解，尚未逐項回填。
+
+### 已驗證落地
+
+- 本地 Docker 開發環境可用：`db`、`backend`、`frontend`、`pdf-renderer` 皆為 healthy
+- Reward / template MVP slice 已落地目前核心流程：template 列表、dashboard reward summary、promo / invite code redemption、credit balance / transactions 均已有實作
+- Backend controller 回應契約已收斂為 typed DTO，auth / credit / template 不再用 ad-hoc `Map<String, Any?>`
+- `CurrentUserResolver` 已集中目前開發期的 current-user fallback，移除多處分散的 `userId ?: 1L`
+- Frontend reward / template 狀態已抽成 `useRewardCenter` 與 `useTemplateCatalog`，`DashboardView` 與 `Step3Template` 不再各自複製 fetch / filter 邏輯
+- Template 新增路徑已比原先更可維護：後端 `templates` table / API 負責商業 metadata，前端 `templateRegistry` / template component 負責渲染；`Dashboard` 與 onboarding step3 共用同一套 template catalog 載入邏輯
+
+### 驗證結果
+
+- `backend`: `./gradlew test` 綠燈（2026-03-28）
+- `frontend`: `npm test` 綠燈（2026-03-28）
+- `docker compose ps` 顯示 `db`、`backend`、`frontend`、`pdf-renderer` 全部 healthy（2026-03-28）
+
+### 已接受但延後處理的技術債
+
+- Auth / security 仍是「目標架構」與「目前開發實作」並存：規劃上是 JWT + Cookie，但目前 controller / 測試仍保留 `X-User-Id` + `CurrentUserResolver` 的 dev fallback
+- Flyway migration 歷史仍不健康：`V1` 到 `V9` 多為 placeholder，實際 reward / template / users bootstrap 主要落在 `V10__bootstrap_reward_and_template_schema.sql`
+- `CreditService` 目前仍是 read-modify-write 更新 `users.credit_balance`，尚未加鎖或版本控制；未來 credit 流量增加時有 race condition 風險
+- `RewardServiceImpl` 仍承擔 code resolve、redemption policy、ledger side effect、response shaping 等多重責任；新增 reward type / admin 流程前應先拆邊界
+- Template 仍是跨 stack 雙來源：後端 seed / DB 管 metadata，前端 `templateRegistry` 管 renderer；在 template 數量變多前需要補 contract check，避免 registry key 與 DB `component_key` 漂移
+- 測試仍偏 mock-heavy，且 test profile 未打開真實 Flyway / PostgreSQL integration；migration 與 SQL runtime 問題仍可能在 Docker 階段才暴露
+
+---
+
 ## Database Schema
 
 ### 共用欄位
@@ -388,8 +418,8 @@ Index: `credit_transactions_user_id_idx`、`credit_transactions_user_created_idx
 
 | Endpoint | Method | Request Body | Response | 說明 |
 |---|---|---|---|---|
-| `/api/v1/me/rewards/summary` | GET | — | `{ inviteCode, hasRedeemedInviteCode, inviteCount, totalInviteReward, inviteRule }` | 取得我的 invite code、推薦摘要與當前邀請獎勵規則 |
-| `/api/v1/me/rewards/redeem` | POST | `{ code, codeType?: "AUTO" \| "PROMO" \| "INVITE" }` | `{ codeType, rewardAmount, balance }` | 單一入口兌換 code；預設 `AUTO`，由後端 resolver 判斷 |
+| `/api/v1/me/rewards/summary` | GET | — | `{ balance, inviteCode, inviteStats, promoRedemptions, inviteRedemption }` | 取得 reward dashboard 摘要（credit、invite 成果、promo redemption 狀態） |
+| `/api/v1/me/rewards/redeem` | POST | `{ code }` | `{ type, code, creditedAmount, balanceAfter, inviterReward, inviteeReward, message }` | 單一入口兌換 promo code 或 invite code，由後端 resolver 自動判斷類型 |
 
 ### Upload（需登入）
 
@@ -685,8 +715,8 @@ spring:
 
 | Endpoint | 說明 |
 |---|---|
-| `GET /api/v1/me/rewards/summary` | 取得自己的 invite code、是否已兌換 invite code、已成功邀請數與邀請獎勵規則 |
-| `POST /api/v1/me/rewards/redeem` | 兌換 promo code 或 invite code，成功後立即回傳新 balance |
+| `GET /api/v1/me/rewards/summary` | 回傳 `{ balance, inviteCode, inviteStats, promoRedemptions, inviteRedemption }`，供 dashboard reward 卡片直接使用 |
+| `POST /api/v1/me/rewards/redeem` | 接收 `{ code }`，成功後回傳 `{ type, code, creditedAmount, balanceAfter, inviterReward, inviteeReward, message }` |
 
 #### Export API 實作
 

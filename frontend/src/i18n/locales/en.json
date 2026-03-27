@@ -1,0 +1,17 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "creditBalance": "{count} Credits"
+  },
+  "auth": {
+    "login": "Log In",
+    "register": "Sign Up"
+  },
+  "reward": {
+    "redeem": "Redeem Code"
+  },
+  "export": {
+    "pdf": "Export PDF"
+  }
+}

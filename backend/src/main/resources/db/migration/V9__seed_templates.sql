@@ -1,0 +1,1 @@
+-- Placeholder seed. Replace with template seed data from dev-plan.md during next TDD slice.

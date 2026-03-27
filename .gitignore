@@ -1,0 +1,19 @@
+.DS_Store
+.idea/
+.vscode/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Backend
+backend/.gradle/
+backend/build/
+backend/out/
+
+# Local data
+data/
+
+# Logs
+*.log

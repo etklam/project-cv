@@ -1,0 +1,1 @@
+-- Placeholder migration. Replace with concrete schema from dev-plan.md during next TDD slice.
