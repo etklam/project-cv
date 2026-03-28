@@ -1,194 +1,90 @@
-# CapRover Deployment Guide
+# CapRover Deployment
 
-## Your CapRover Instance
-- URL: `https://captain.rnsj.913555.xyz`
-- Password: `Ihave2jj`
+This repository is deployed to CapRover as four separate apps:
 
----
+- `project-cv-db`
+- `project-cv-pdf`
+- `project-cv-backend`
+- `project-cv-frontend`
 
-## What is CapRover?
+The frontend serves the SPA and proxies `/api` plus `/uploads` to the backend through `frontend/nginx.conf`. The backend therefore does not need to be exposed through HTTPS for normal browser traffic.
 
-CapRover is a PaaS (Platform as a Service) that simplifies deployment:
-- Automatic SSL certificates (Let's Encrypt)
-- Git-based deployment (push to deploy)
-- One-click apps (PostgreSQL, Redis, etc.)
-- Web dashboard management
+## Files
 
----
+- `.env.caprover.example`: environment template
+- `scripts/caprover/bootstrap.sh`: one-time app bootstrap
+- `scripts/caprover/deploy.sh`: repeatable service deploy
+- `scripts/caprover/verify.sh`: post-deploy smoke checks
 
-## Quick Deploy (10 minutes)
+## Required Secrets
 
-### Step 1: Push Code to Git Repository
+Copy `.env.caprover.example` to `.env.caprover.local` and fill in:
 
-```bash
-# Commit and push your code
-git add .
-git commit -m "Ready for CapRover deployment"
-git push origin main
-```
+- `CAPROVER_URL`
+- `CAPROVER_PASSWORD`
+- `CAPROVER_POSTGRES_PASSWORD`
+- `CAPROVER_JWT_SECRET`
 
-### Step 2: Create PostgreSQL Database
+Optional overrides exist for app names and database name, but the defaults match the current production setup.
 
-1. Log in to `https://captain.rnsj.913555.xyz` with password `Ihave2jj`
-2. Go to **Apps** tab
-3. Click **One-Click Apps/Apps**
-4. Find and click **PostgreSQL**
-5. Configure:
-   - **App Name**: `project-cv-db`
-   - **Container HTTP Port**: leave blank (internal only)
-   - **App Definition**:
-     ```json
-     {
-       "schemaVersion": 2,
-       "dockerCompose": {
-         "services": {
-           "postgres": {
-             "image": "postgres:16-alpine",
-             "volumes": [
-               {
-                 "source": "postgres-data",
-                 "target": "/var/lib/postgresql/data",
-                 "type": "volume"
-               }
-             ],
-             "environment": {
-               "POSTGRES_DB": "postgres",
-               "POSTGRES_USER": "postgres",
-               "POSTGRES_PASSWORD": "changeme"
-             }
-           }
-         },
-         "volumes": {
-           "postgres-data": {}
-         }
-       }
-     }
-     ```
-6. **IMPORTANT**: Change `"POSTGRES_PASSWORD": "changeme"` to a strong password
-7. Click **Create**
+## One-Time Bootstrap
 
-> Save the password you set - you'll need it for the backend app!
-
-### Step 3: Create Backend App
-
-1. Go to **Apps** → **Create New App**
-2. **App Name**: `project-cv-backend`
-3. Click **Create**
-4. Open the app and go to **Deployment** tab
-
-5. **Deployment Method**: Select **Docker Compose (git)**
-
-6. Configure Git:
-   | Field | Value |
-   |-------|-------|
-   | Repository URL | Your GitHub/GitLab repo URL |
-   | Branch | `main` |
-   | Compose Path | `docker-compose.caprover.yml` |
-
-7. Go to **Environment Variables** tab, add:
-   | Key | Value |
-   |-----|-------|
-   | `POSTGRES_PASSWORD` | (your PostgreSQL password from Step 2) |
-   | `JWT_SECRET` | Generate: `openssl rand -base64 64` |
-   | `APP_BASE_URL` | `https://captain.rnsj.913555.xyz` |
-
-8. Go to **Networking** tab:
-   - **Container HTTP Port**: `8080`
-
-9. Click **Update & Deploy**
-
-### Step 4: Create Frontend App
-
-1. Go to **Apps** → **Create New App**
-2. **App Name**: `project-cv-frontend`
-3. Click **Create**
-4. Open the app and go to **Deployment** tab
-
-5. **Deployment Method**: Select **Dockerfile (git)**
-
-6. Configure Git:
-   | Field | Value |
-   |-------|-------|
-   | Repository URL | Your GitHub/GitLab repo URL |
-   | Branch | `main` |
-   | Dockerfile Path | `frontend/Dockerfile` |
-
-7. Go to **Environment Variables** tab, add:
-   | Key | Value |
-   |-----|-------|
-   | `VITE_API_BASE_URL` | `https://project-cv-backend.captain.rnsj.913555.xyz/api` |
-
-8. Go to **Networking** tab:
-   - **Container HTTP Port**: `80`
-
-9. Go to **Domains** tab:
-   - Add custom domain: `captain.rnsj.913555.xyz`
-   - Enable HTTPS (Let's Encrypt)
-
-10. Click **Update & Deploy**
-
----
-
-## Verify Deployment
-
-1. Check **App Logs** for both apps
-2. Visit `https://captain.rnsj.913555.xyz` - should see the login page
-3. Try logging in:
-   - Email: `admin@project.cv`
-   - Password: `admin123`
-   - Should redirect to `/admin/dashboard`
-
----
-
-## Environment Variables Summary
-
-### Backend (`project-cv-backend`)
-| Variable | Value |
-|----------|-------|
-| `POSTGRES_PASSWORD` | Your PostgreSQL password |
-| `JWT_SECRET` | Strong random string |
-| `APP_BASE_URL` | `https://captain.rnsj.913555.xyz` |
-
-### Frontend (`project-cv-frontend`)
-| Variable | Value |
-|----------|-------|
-| `VITE_API_BASE_URL` | `https://project-cv-backend.captain.rnsj.913555.xyz/api` |
-
----
-
-## Troubleshooting
-
-### Backend won't start
-- Check **App Logs** tab
-- Verify PostgreSQL app is running
-- Check `POSTGRES_PASSWORD` matches between apps
-
-### Frontend can't reach backend
-- Verify backend URL in environment variable
-- Check backend app is running
-- Ensure no firewall blocking
-
-### Database connection issues
-- PostgreSQL internal DNS: `project-cv-db.sail`
-- In CapRover, services on the same app can connect via `service-name`
-- For one-click apps, use `app-name.sail`
-
-### SSL issues
-- Domain must point to CapRover server
-- Enable HTTPS in **Domains** tab
-- Wait a few minutes for Let's Encrypt
-
----
-
-## Updating
+Use this when the CapRover instance is empty or the apps do not exist yet:
 
 ```bash
-# Make changes locally
-git add .
-git commit -m "Update feature"
-git push origin main
-
-# In CapRover, click "Update & Deploy" for each app
+chmod +x scripts/caprover/*.sh
+./scripts/caprover/bootstrap.sh
 ```
 
-Or enable **Auto-Deploy** in the Deployment tab!
+What bootstrap does:
+
+- creates the four apps if they are missing
+- applies the correct `containerHttpPort` and env vars
+- deploys PostgreSQL as `postgres:16-alpine` with a persistent volume
+- enables base-domain SSL for the frontend app
+
+Bootstrap only submits the database deploy. Run the normal deploy script after that.
+
+## Repeatable Deploy
+
+For code changes, use:
+
+```bash
+./scripts/caprover/deploy.sh
+```
+
+What deploy does:
+
+- re-syncs frontend, backend, and pdf-renderer app settings
+- packages `backend/`, `frontend/`, and `services/pdf-renderer/` into separate tarballs
+- uploads each tarball to its matching CapRover app
+
+The uploads are submitted in detached mode, so CapRover continues building after the command exits.
+
+## Verify
+
+After CapRover finishes building, run:
+
+```bash
+./scripts/caprover/verify.sh
+```
+
+Current expected endpoints:
+
+- Backend health: `http://project-cv-backend.<root-domain>/actuator/health`
+- Frontend API proxy: `https://project-cv-frontend.<root-domain>/api/v1/templates`
+
+## Current Production Mapping
+
+On the current server, the scripts resolve to:
+
+- Frontend: `https://project-cv-frontend.rnsj.913555.xyz`
+- Backend health: `http://project-cv-backend.rnsj.913555.xyz/actuator/health`
+- PDF renderer internal URL: `http://srv-captain--project-cv-pdf:3100`
+- PostgreSQL internal URL: `jdbc:postgresql://srv-captain--project-cv-db:5432/project_cv`
+
+## Notes
+
+- `docker-compose.caprover.yml` and the root `captain-definition` are older experiments and are not the active production path.
+- The deploy scripts use the CapRover HTTP API directly, so they do not depend on a pre-saved local CapRover login session.
+- If `verify.sh` fails right after deploy, check the app runtime logs in CapRover first; detached builds may still be running.

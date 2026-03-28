@@ -40,3 +40,8 @@ If you want to verify the clean bootstrap path locally, recreate the PostgreSQL 
 docker compose down -v
 docker compose up --build -d
 ```
+
+## CapRover
+
+CapRover deployment is documented in `CAPROVER_DEPLOYMENT.md`.
+The repeatable scripts live in `scripts/caprover/` and load secrets from `.env.caprover.local`.
