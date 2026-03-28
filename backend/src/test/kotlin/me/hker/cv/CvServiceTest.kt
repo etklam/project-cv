@@ -2,13 +2,20 @@ package me.hker.cv
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import me.hker.common.InsufficientCreditsException
+import me.hker.config.AppBusinessProperties
 import me.hker.common.ResourceNotFoundException
+import me.hker.module.credit.service.CreditService
+import me.hker.module.cv.dto.CreateCvRequest
+import me.hker.module.cv.dto.CvSectionPayload
+import me.hker.module.cv.dto.UpdateCvSectionsRequest
 import me.hker.module.cv.dto.UpdateCvRequest
 import me.hker.module.cv.entity.Cv
 import me.hker.module.cv.entity.CvSection
 import me.hker.module.cv.mapper.CvMapper
 import me.hker.module.cv.mapper.CvSectionMapper
 import me.hker.module.cv.service.impl.CvServiceImpl
+import me.hker.module.template.dto.TemplateDto
 import me.hker.module.template.service.TemplateService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -18,6 +25,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.LocalDateTime
@@ -26,10 +34,13 @@ class CvServiceTest {
     private val cvMapper = mock<CvMapper>()
     private val cvSectionMapper = mock<CvSectionMapper>()
     private val templateService = mock<TemplateService>()
+    private val creditService = mock<CreditService>()
     private val service = CvServiceImpl(
         cvMapper = cvMapper,
         cvSectionMapper = cvSectionMapper,
         templateService = templateService,
+        creditService = creditService,
+        appBusinessProperties = AppBusinessProperties(),
         objectMapper = jacksonObjectMapper(),
     )
 
@@ -102,7 +113,7 @@ class CvServiceTest {
             slug = "public-resume",
         )
         whenever(cvMapper.selectOne(any<QueryWrapper<Cv>>())).thenReturn(existing, null, updated)
-        whenever(templateService.existsActiveTemplate("modern")).thenReturn(true)
+        whenever(templateService.getActiveTemplate("modern")).thenReturn(template("modern", 5))
         whenever(cvSectionMapper.selectList(any<QueryWrapper<CvSection>>())).thenReturn(emptyList())
 
         val result = service.updateMetadata(
@@ -129,6 +140,158 @@ class CvServiceTest {
     }
 
     @Test
+    fun `create deducts create cv credits and persists default sections`() {
+        whenever(templateService.getActiveTemplate("minimal")).thenReturn(template("minimal", 0))
+        whenever(cvMapper.insert(any<Cv>())).thenAnswer { invocation ->
+            invocation.getArgument<Cv>(0).id = 9L
+            1
+        }
+        whenever(cvMapper.selectOne(any<QueryWrapper<Cv>>())).thenReturn(
+            cv(
+                id = 9L,
+                title = "New CV",
+                templateKey = "minimal",
+                isPublic = false,
+                slug = null,
+            ),
+        )
+        whenever(cvSectionMapper.selectList(any<QueryWrapper<CvSection>>())).thenReturn(
+            listOf(
+                section(1L, 9L, "summary", 0, "Summary", """{"text":""}"""),
+                section(2L, 9L, "experience", 1, "Experience", """{"items":[]}"""),
+                section(3L, 9L, "education", 2, "Education", """{"items":[]}"""),
+                section(4L, 9L, "skills", 3, "Skills", """{"items":[]}"""),
+            ),
+        )
+
+        val created = service.create(1L, CreateCvRequest(title = "New CV"))
+
+        verify(creditService).deduct(1L, 10, "CREATE_CV", "CV", 9L, "create cv")
+        assertEquals("New CV", created.cv.title)
+        assertEquals(4, created.sections.size)
+    }
+
+    @Test
+    fun `updateMetadata deducts paid template cost when switching template`() {
+        val existing = cv(
+            id = 1L,
+            title = "Resume",
+            templateKey = "minimal",
+            isPublic = false,
+            slug = null,
+        )
+        val updated = cv(
+            id = 1L,
+            title = "Resume",
+            templateKey = "modern",
+            isPublic = false,
+            slug = null,
+        )
+        whenever(cvMapper.selectOne(any<QueryWrapper<Cv>>())).thenReturn(existing, updated)
+        whenever(templateService.getActiveTemplate("modern")).thenReturn(template("modern", 5))
+        whenever(cvSectionMapper.selectList(any<QueryWrapper<CvSection>>())).thenReturn(emptyList())
+
+        service.updateMetadata(1L, 1L, UpdateCvRequest(templateKey = "modern"))
+
+        verify(creditService).deduct(1L, 5, "SWITCH_TEMPLATE", "CV", 1L, "switch template")
+    }
+
+    @Test
+    fun `updateMetadata skips credit deduction when template does not change`() {
+        val existing = cv(
+            id = 1L,
+            title = "Resume",
+            templateKey = "modern",
+            isPublic = false,
+            slug = null,
+        )
+        val updated = cv(
+            id = 1L,
+            title = "Resume",
+            templateKey = "modern",
+            isPublic = false,
+            slug = null,
+        )
+        whenever(cvMapper.selectOne(any<QueryWrapper<Cv>>())).thenReturn(existing, updated)
+        whenever(templateService.getActiveTemplate("modern")).thenReturn(template("modern", 5))
+        whenever(cvSectionMapper.selectList(any<QueryWrapper<CvSection>>())).thenReturn(emptyList())
+
+        service.updateMetadata(1L, 1L, UpdateCvRequest(templateKey = "modern"))
+
+        verify(creditService, never()).deduct(any(), any(), any(), any(), any(), any())
+    }
+
+    @Test
+    fun `updateSections replaces existing sections`() {
+        val existing = cv(
+            id = 1L,
+            title = "Resume",
+            templateKey = "minimal",
+            isPublic = false,
+            slug = null,
+        )
+        whenever(cvMapper.selectOne(any<QueryWrapper<Cv>>())).thenReturn(existing, existing)
+        whenever(cvSectionMapper.selectList(any<QueryWrapper<CvSection>>())).thenReturn(
+            listOf(section(9L, 1L, "summary", 0, "Summary", """{"text":"Old"}""")),
+            listOf(section(10L, 1L, "summary", 0, "Summary", """{"text":"New"}""")),
+        )
+
+        val result = service.updateSections(
+            1L,
+            1L,
+            UpdateCvSectionsRequest(
+                sections = listOf(
+                    CvSectionPayload(
+                        sectionType = "summary",
+                        sortOrder = 0,
+                        title = "Summary",
+                        content = jacksonObjectMapper().readTree("""{"text":"New"}"""),
+                    ),
+                ),
+            ),
+        )
+
+        verify(cvSectionMapper).updateById(any<CvSection>())
+        verify(cvSectionMapper).insert(any<CvSection>())
+        assertEquals("New", result.sections.first().content["text"].asText())
+    }
+
+    @Test
+    fun `delete marks cv and sections as deleted`() {
+        val existing = cv(
+            id = 1L,
+            title = "Resume",
+            templateKey = "minimal",
+            isPublic = false,
+            slug = null,
+        )
+        whenever(cvMapper.selectOne(any<QueryWrapper<Cv>>())).thenReturn(existing)
+        whenever(cvSectionMapper.selectList(any<QueryWrapper<CvSection>>())).thenReturn(
+            listOf(section(9L, 1L, "summary", 0, "Summary", """{"text":"Old"}""")),
+        )
+
+        service.delete(1L, 1L)
+
+        verify(cvMapper).updateById(any<Cv>())
+        verify(cvSectionMapper).updateById(any<CvSection>())
+    }
+
+    @Test
+    fun `create surfaces insufficient credits from credit service`() {
+        whenever(templateService.getActiveTemplate("minimal")).thenReturn(template("minimal", 0))
+        whenever(cvMapper.insert(any<Cv>())).thenAnswer { invocation ->
+            invocation.getArgument<Cv>(0).id = 9L
+            1
+        }
+        whenever(creditService.deduct(1L, 10, "CREATE_CV", "CV", 9L, "create cv"))
+            .thenThrow(InsufficientCreditsException())
+
+        assertThrows(InsufficientCreditsException::class.java) {
+            service.create(1L, CreateCvRequest(title = "New CV"))
+        }
+    }
+
+    @Test
     fun `updateMetadata rejects invalid slug or unknown template`() {
         whenever(cvMapper.selectOne(any<QueryWrapper<Cv>>())).thenReturn(
             cv(
@@ -139,7 +302,7 @@ class CvServiceTest {
                 slug = null,
             ),
         )
-        whenever(templateService.existsActiveTemplate("ghost")).thenReturn(false)
+        whenever(templateService.getActiveTemplate("ghost")).thenReturn(null)
 
         val badTemplate = assertThrows(IllegalArgumentException::class.java) {
             service.updateMetadata(1L, 1L, UpdateCvRequest(templateKey = "ghost"))
@@ -202,4 +365,28 @@ class CvServiceTest {
         this.slug = slug
         updatedAt = LocalDateTime.of(2026, 3, 28, 12, 0)
     }
+
+    private fun section(
+        id: Long,
+        cvId: Long,
+        sectionType: String,
+        sortOrder: Int,
+        title: String?,
+        content: String,
+    ) = CvSection().apply {
+        this.id = id
+        this.cvId = cvId
+        this.sectionType = sectionType
+        this.sortOrder = sortOrder
+        this.title = title
+        this.content = content
+    }
+
+    private fun template(key: String, creditCost: Int) = TemplateDto(
+        key = key,
+        displayName = key,
+        description = key,
+        creditCost = creditCost,
+        previewImagePath = null,
+    )
 }

@@ -10,6 +10,7 @@ class User : BaseEntity() {
     var username: String? = null
     var displayName: String = ""
     var avatarPath: String? = null
+    var onboardingDraft: String? = null
     var onboardingStatus: String = "STEP_1"
     var locale: String = "zh-TW"
     var creditBalance: Int = 0

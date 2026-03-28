@@ -34,4 +34,27 @@ interface UserMapper : BaseMapper<User> {
         """,
     )
     fun selectCreditBalance(@Param("userId") userId: Long): Int?
+
+    @Select(
+        """
+        SELECT *
+        FROM users
+        WHERE email = #{email}
+          AND is_deleted = false
+        LIMIT 1
+        """,
+    )
+    fun selectByEmail(@Param("email") email: String): User?
+
+    @Select(
+        """
+        SELECT *
+        FROM users
+        WHERE invite_code = #{inviteCode}
+          AND is_deleted = false
+        LIMIT 1
+        FOR UPDATE
+        """,
+    )
+    fun selectForUpdate(@Param("inviteCode") inviteCode: String): User?
 }

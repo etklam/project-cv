@@ -19,7 +19,8 @@ management:
         enabled: true
 
 jwt:
-  secret: ${JWT_SECRET:dev-secret}
+  secret: ${JWT_SECRET:dev-secret-key-32-bytes-long-for-hs256-signing}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000} # 24 hours
 
 app:
   upload:
@@ -28,6 +29,9 @@ app:
     sign-up-bonus: ${APP_CREDIT_SIGN_UP_BONUS:50}
     create-cv-cost: ${APP_CREDIT_CREATE_CV_COST:10}
     pdf-export-cost: ${APP_CREDIT_PDF_EXPORT_COST:15}
+  export:
+    renderer-base-url: ${APP_EXPORT_RENDERER_BASE_URL:http://localhost:3100}
+    frontend-base-url: ${APP_EXPORT_FRONTEND_BASE_URL:http://localhost:5173}
   reward:
     invite:
       inviter-bonus: ${APP_REWARD_INVITE_INVITER_BONUS:20}

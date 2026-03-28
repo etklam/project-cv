@@ -7,8 +7,10 @@ import me.hker.module.reward.dto.RewardRedeemResultDto
 import me.hker.module.reward.entity.InviteCodeRedemption
 import me.hker.module.reward.mapper.InviteCodeRedemptionMapper
 import me.hker.module.reward.service.InviteCodeRewardRedemptionService
+import me.hker.module.user.mapper.UserMapper
 import me.hker.module.user.service.UserService
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Isolation
 import org.springframework.transaction.annotation.Transactional
 
 @Service
@@ -16,14 +18,16 @@ class InviteCodeRewardRedemptionServiceImpl(
     private val userService: UserService,
     private val creditService: CreditService,
     private val inviteCodeRedemptionMapper: InviteCodeRedemptionMapper,
+    private val userMapper: UserMapper,
     private val businessProperties: AppBusinessProperties,
 ) : InviteCodeRewardRedemptionService {
-    @Transactional
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     override fun redeem(userId: Long, normalizedCode: String): RewardRedeemResultDto {
         val invitee = requireUser(userId)
         require(invitee.inviteCode != normalizedCode) { "cannot redeem your own invite code" }
 
-        val inviter = userService.findByInviteCode(normalizedCode)
+        // Use pessimistic lock on inviter to prevent race conditions
+        val inviter = userMapper.selectForUpdate(invitee.inviteCode)
             ?: throw IllegalArgumentException("reward code is invalid")
 
         val existingInviteRedemptionCount = inviteCodeRedemptionMapper.selectCount(

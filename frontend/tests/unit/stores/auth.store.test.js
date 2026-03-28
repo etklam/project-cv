@@ -1,5 +1,6 @@
 import { setActivePinia, createPinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import i18n from "@/i18n";
 import { useAuthStore } from "@/stores/auth";
 
 vi.mock("@/api/auth", () => {
@@ -18,6 +19,7 @@ describe("auth store", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.resetAllMocks();
+    i18n.global.locale.value = "zh-TW";
   });
 
   it("bootstrap sets user and auth flags from /auth/me", async () => {
@@ -37,6 +39,7 @@ describe("auth store", () => {
     expect(store.initialized).toBe(true);
     expect(store.isLoggedIn).toBe(true);
     expect(store.user?.email).toBe("test@example.com");
+    expect(i18n.global.locale.value).toBe("zh-TW");
   });
 
   it("setLocale updates local state and invokes backend API when logged in", async () => {
@@ -50,6 +53,7 @@ describe("auth store", () => {
 
     expect(store.locale).toBe("en");
     expect(changeLocale).toHaveBeenCalledWith({ locale: "en" });
+    expect(i18n.global.locale.value).toBe("en");
   });
 
   it.todo("bootstrap gracefully handles 401 and keeps app in guest mode");

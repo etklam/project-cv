@@ -3,6 +3,7 @@ package me.hker.module.credit.service.impl
 import com.baomidou.mybatisplus.core.metadata.IPage
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page
+import me.hker.common.InsufficientCreditsException
 import me.hker.module.credit.entity.CreditTransaction
 import me.hker.module.credit.mapper.CreditTransactionMapper
 import me.hker.module.credit.service.CreditService
@@ -82,7 +83,7 @@ class CreditServiceImpl(
                 throw IllegalArgumentException("user not found")
             }
             if (delta < 0 && currentBalance + delta < 0) {
-                throw IllegalArgumentException("insufficient credits")
+                throw InsufficientCreditsException()
             }
             throw IllegalStateException("credit balance update failed")
         }

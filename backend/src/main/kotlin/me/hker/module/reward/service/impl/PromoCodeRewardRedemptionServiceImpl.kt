@@ -10,8 +10,8 @@ import me.hker.module.reward.mapper.PromoCodeRedemptionMapper
 import me.hker.module.reward.service.PromoCodeRewardRedemptionService
 import me.hker.module.user.service.UserService
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Isolation
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 
 @Service
 class PromoCodeRewardRedemptionServiceImpl(
@@ -20,11 +20,12 @@ class PromoCodeRewardRedemptionServiceImpl(
     private val promoCodeMapper: PromoCodeMapper,
     private val promoCodeRedemptionMapper: PromoCodeRedemptionMapper,
 ) : PromoCodeRewardRedemptionService {
-    @Transactional
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     override fun redeem(userId: Long, normalizedCode: String): RewardRedeemResultDto {
         requireUser(userId)
 
-        val promoCode = promoCodeMapper.selectOne(
+        // Use pessimistic lock to prevent race conditions on redemption count
+        val promoCode = promoCodeMapper.selectForUpdate(
             QueryWrapper<PromoCode>()
                 .eq("code", normalizedCode)
                 .last("LIMIT 1"),

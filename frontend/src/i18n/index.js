@@ -3,9 +3,17 @@ import en from "./locales/en.json";
 import zhCN from "./locales/zh-CN.json";
 import zhTW from "./locales/zh-TW.json";
 
+function resolveInitialLocale() {
+  if (typeof globalThis.localStorage?.getItem === "function") {
+    return globalThis.localStorage.getItem("locale") || "zh-TW";
+  }
+
+  return "zh-TW";
+}
+
 const i18n = createI18n({
   legacy: false,
-  locale: localStorage.getItem("locale") || "zh-TW",
+  locale: resolveInitialLocale(),
   fallbackLocale: "en",
   messages: {
     en,

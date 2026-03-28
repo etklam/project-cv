@@ -1,17 +1,86 @@
-<script>
-export default {
+<script setup>
+import { useI18n } from "vue-i18n";
+import { computed } from "vue";
+import SummarySection from "@/components/sections/SummarySection.vue";
+
+defineOptions({
   name: "SidebarTemplate",
-  props: {
-    cv: { type: Object, default: () => ({}) },
-    sections: { type: Array, default: () => [] },
-    mode: { type: String, default: "public" },
-  },
+});
+import ExperienceSection from "@/components/sections/ExperienceSection.vue";
+import EducationSection from "@/components/sections/EducationSection.vue";
+import SkillsSection from "@/components/sections/SkillsSection.vue";
+
+const { t } = useI18n();
+
+const props = defineProps({
+  cv: { type: Object, default: () => ({}) },
+  sections: { type: Array, default: () => [] },
+  mode: { type: String, default: "public" },
+});
+
+const sectionComponentMap = {
+  summary: SummarySection,
+  experience: ExperienceSection,
+  education: EducationSection,
+  skills: SkillsSection,
 };
+
+const sidebarSections = computed(() =>
+  props.sections.filter((section) => ["skills", "education"].includes(section.sectionType)),
+);
+const mainSections = computed(() =>
+  props.sections.filter((section) => !["skills", "education"].includes(section.sectionType)),
+);
 </script>
 
 <template>
-  <section data-testid="template-sidebar">
-    <h1>{{ cv.title || "Sidebar CV" }}</h1>
-    <p>{{ mode }}</p>
+  <section data-testid="template-sidebar" class="sidebar">
+    <aside class="sidebar__aside">
+      <h2 class="sidebar__title text-xl font-bold text-gray-900">{{ cv.title || t("editor.title") }}</h2>
+      <component
+        v-for="(section, index) in sidebarSections"
+        :key="`${section.sectionType}-${index}`"
+        :is="sectionComponentMap[section.sectionType] || null"
+        v-bind="section"
+      />
+    </aside>
+    <main class="sidebar__main">
+      <component
+        v-for="(section, index) in mainSections"
+        :key="`${section.sectionType}-${index}`"
+        :is="sectionComponentMap[section.sectionType] || null"
+        v-bind="section"
+      />
+    </main>
   </section>
 </template>
+
+<style scoped>
+.sidebar {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 1rem;
+}
+@media (max-width: 768px) {
+  .sidebar {
+    grid-template-columns: 1fr;
+  }
+}
+.sidebar__aside {
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+}
+.sidebar__title {
+  margin: 0 0 0.75rem;
+}
+.sidebar__main {
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #ffffff;
+  display: grid;
+  gap: 0.75rem;
+}
+</style>

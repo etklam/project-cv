@@ -7,6 +7,7 @@ data class AppBusinessProperties(
     val credit: Credit = Credit(),
     val reward: Reward = Reward(),
     val upload: Upload = Upload(),
+    val export: Export = Export(),
 ) {
     data class Credit(
         val signUpBonus: Int = 50,
@@ -25,5 +26,10 @@ data class AppBusinessProperties(
 
     data class Upload(
         val path: String = "./data/uploads",
+    )
+
+    data class Export(
+        val rendererBaseUrl: String = "http://localhost:3100",
+        val frontendBaseUrl: String = "http://localhost:5173",
     )
 }

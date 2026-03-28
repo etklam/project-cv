@@ -6,3 +6,9 @@ spring:
     password:
   flyway:
     enabled: false
+  main:
+    allow-bean-definition-overriding: true
+
+jwt:
+  secret: test-secret-key-32-bytes-long-for-hs256
+  expiration-ms: 86400000

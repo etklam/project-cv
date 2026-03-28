@@ -3,7 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import DashboardView from "@/views/dashboard/DashboardView.vue";
 import { getRewardSummary, redeemCode } from "@/api/reward";
 import { listTemplates } from "@/api/template";
-import { listCvs } from "@/api/cv";
+import { createCv, deleteCv, listCvs } from "@/api/cv";
 
 vi.mock("@/api/reward", () => ({
   getRewardSummary: vi.fn(),
@@ -16,6 +16,8 @@ vi.mock("@/api/template", () => ({
 
 vi.mock("@/api/cv", () => ({
   listCvs: vi.fn(),
+  createCv: vi.fn(),
+  deleteCv: vi.fn(),
 }));
 
 vi.mock("@/components/templates/TemplateCard.vue", () => ({
@@ -45,6 +47,10 @@ describe("DashboardView", () => {
     vi.clearAllMocks();
     vi.mocked(listTemplates).mockResolvedValue({ templates: [] });
     vi.mocked(listCvs).mockResolvedValue({ cvs: [] });
+    vi.mocked(createCv).mockResolvedValue({
+      cv: { id: 99, title: "New CV", templateKey: "minimal", isPublic: false, slug: null },
+    });
+    vi.mocked(deleteCv).mockResolvedValue({});
   });
 
   it("loads summary and renders balance details", async () => {
@@ -113,5 +119,36 @@ describe("DashboardView", () => {
     expect(wrapper.findAll("[data-testid=cv-title]")).toHaveLength(2);
     expect(wrapper.findAll("[data-testid=cv-edit-link]")).toHaveLength(2);
     expect(wrapper.get("[data-testid=cv-public-badge]").text()).toContain("backend-resume");
+  });
+
+  it("creates a new cv from dashboard action", async () => {
+    vi.mocked(getRewardSummary).mockResolvedValue(summaryPayload);
+
+    const wrapper = mount(DashboardView);
+    await flushPromises();
+
+    await wrapper.get("[data-testid=create-cv]").trigger("click");
+    await flushPromises();
+
+    expect(createCv).toHaveBeenCalledWith({ title: "New CV", templateKey: "minimal" });
+    expect(wrapper.get("[data-testid=dashboard-action-message]").text()).toContain("CV created");
+    expect(wrapper.get("[data-testid=cvs-list]").text()).toContain("New CV");
+  });
+
+  it("deletes a cv from dashboard action", async () => {
+    vi.mocked(getRewardSummary).mockResolvedValue(summaryPayload);
+    vi.mocked(listCvs).mockResolvedValue({
+      cvs: [{ id: 3, title: "Backend Resume", templateKey: "modern", isPublic: false, slug: null }],
+    });
+
+    const wrapper = mount(DashboardView);
+    await flushPromises();
+
+    await wrapper.get("[data-testid=cv-delete-button]").trigger("click");
+    await flushPromises();
+
+    expect(deleteCv).toHaveBeenCalledWith(3);
+    expect(wrapper.get("[data-testid=dashboard-action-message]").text()).toContain("CV deleted");
+    expect(wrapper.get("[data-testid=cvs-empty]").text()).toContain("No CVs yet.");
   });
 });

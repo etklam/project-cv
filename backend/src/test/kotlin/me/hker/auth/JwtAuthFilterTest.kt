@@ -15,7 +15,8 @@ import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.security.core.context.SecurityContextHolder
 
 class JwtAuthFilterTest {
-    private val jwtUtil = JwtUtil("test-secret")
+    // HS256 requires at least 256 bits (32 bytes)
+    private val jwtUtil = JwtUtil("test-secret-key-32-bytes-long-for-hs256")
     private val filter = JwtAuthFilter(jwtUtil)
 
     @AfterEach

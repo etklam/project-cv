@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { changeLocale, login, logout, me, register } from "@/api/auth";
+import i18n from "@/i18n";
 
 function safeGetLocale() {
   if (typeof globalThis.localStorage?.getItem === "function") {
@@ -23,15 +24,29 @@ export const useAuthStore = defineStore("auth", {
     locale: safeGetLocale() || "zh-TW",
   }),
   actions: {
+    reset() {
+      this.user = null;
+      this.isLoggedIn = false;
+      this.initialized = false;
+      // Preserve locale preference across sessions
+    },
     async bootstrap() {
       try {
         const data = await me();
         this.user = data.user;
         this.isLoggedIn = true;
-        this.locale = data.user?.locale || this.locale;
+        const serverLocale = data.user?.locale;
+        if (serverLocale) {
+          this.locale = serverLocale;
+          safeSetLocale(serverLocale);
+          i18n.global.locale.value = serverLocale;
+        } else {
+          i18n.global.locale.value = this.locale;
+        }
       } catch (_error) {
         this.user = null;
         this.isLoggedIn = false;
+        i18n.global.locale.value = this.locale;
       } finally {
         this.initialized = true;
       }
@@ -39,6 +54,7 @@ export const useAuthStore = defineStore("auth", {
     async setLocale(locale) {
       this.locale = locale;
       safeSetLocale(locale);
+      i18n.global.locale.value = locale;
 
       if (this.isLoggedIn) {
         const data = await changeLocale({ locale });
@@ -62,8 +78,7 @@ export const useAuthStore = defineStore("auth", {
     },
     async logout() {
       await logout();
-      this.user = null;
-      this.isLoggedIn = false;
+      this.reset();
     },
   },
 });

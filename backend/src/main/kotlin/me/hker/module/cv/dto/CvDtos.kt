@@ -38,9 +38,21 @@ data class CvDetailResponse(
     val sections: List<CvSectionDto>,
 )
 
+data class CreateCvRequest(
+    val title: String,
+    val templateKey: String = "minimal",
+    val isPublic: Boolean = false,
+    val slug: String? = null,
+    val sections: List<CvSectionPayload> = emptyList(),
+)
+
 data class UpdateCvRequest(
     val title: String? = null,
     val templateKey: String? = null,
     val isPublic: Boolean? = null,
     val slug: String? = null,
+)
+
+data class UpdateCvSectionsRequest(
+    val sections: List<CvSectionPayload>,
 )
