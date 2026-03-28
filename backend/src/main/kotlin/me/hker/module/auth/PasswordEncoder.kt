@@ -4,7 +4,7 @@ import at.favre.lib.crypto.bcrypt.BCrypt
 import org.springframework.stereotype.Component
 
 @Component
-class PasswordEncoder {
+class AppPasswordEncoder {
     /**
      * Hash a raw password using BCrypt with cost factor 12
      */

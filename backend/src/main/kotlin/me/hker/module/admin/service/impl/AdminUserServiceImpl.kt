@@ -27,11 +27,11 @@ class AdminUserServiceImpl(
 
         // Apply search filter if provided
         if (!search.isNullOrBlank()) {
-            query.and(wrapper ->
+            query.and { wrapper ->
                 wrapper.like("email", search)
                     .or().like("display_name", search)
                     .or().like("username", search)
-            )
+            }
         }
 
         query.orderByDesc("created_at")

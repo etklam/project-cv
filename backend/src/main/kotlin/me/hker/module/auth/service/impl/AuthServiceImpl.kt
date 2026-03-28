@@ -4,7 +4,7 @@ import jakarta.servlet.http.HttpServletResponse
 import me.hker.common.toDto
 import me.hker.module.auth.AuthenticationException
 import me.hker.module.auth.InvalidCredentialsException
-import me.hker.module.auth.PasswordEncoder
+import me.hker.module.auth.AppPasswordEncoder
 import me.hker.module.auth.UserAlreadyExistsException
 import me.hker.module.auth.UserNotFoundException
 import me.hker.module.auth.dto.AuthUserDto
@@ -25,7 +25,7 @@ import java.util.*
 @Service
 class AuthServiceImpl(
     private val userMapper: UserMapper,
-    private val passwordEncoder: PasswordEncoder,
+    private val passwordEncoder: AppPasswordEncoder,
     private val appBusinessProperties: AppBusinessProperties,
 ) : AuthService {
 

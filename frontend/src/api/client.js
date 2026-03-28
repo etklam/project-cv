@@ -19,7 +19,10 @@ client.interceptors.response.use(
     if (status === 401) {
       // Clear auth state and redirect to login
       localStorage.removeItem("auth_token");
-      window.location.href = "/login";
+      const path = window.location.pathname;
+      if (path !== "/login" && path !== "/register") {
+        window.location.replace("/login");
+      }
     }
 
     if (status === 402) {

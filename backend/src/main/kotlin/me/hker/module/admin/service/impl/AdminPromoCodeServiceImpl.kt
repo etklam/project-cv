@@ -7,6 +7,7 @@ import me.hker.common.ResourceNotFoundException
 import me.hker.module.admin.dto.*
 import me.hker.module.admin.service.AdminPromoCodeService
 import me.hker.module.reward.entity.PromoCode
+import me.hker.module.reward.entity.PromoCodeRedemption
 import me.hker.module.reward.mapper.PromoCodeMapper
 import me.hker.module.reward.mapper.PromoCodeRedemptionMapper
 import org.springframework.stereotype.Service
@@ -26,7 +27,7 @@ class AdminPromoCodeServiceImpl(
 
         val promoCodes = promoCodePage.records.map { promoCode ->
             val redemptionCount = promoCodeRedemptionMapper.selectCount(
-                QueryWrapper().eq("promo_code_id", promoCode.id)
+                QueryWrapper<PromoCodeRedemption>().eq("promo_code_id", promoCode.id)
             ).toInt()
 
             AdminPromoCodeDto(
@@ -103,7 +104,7 @@ class AdminPromoCodeServiceImpl(
         promoCodeMapper.updateById(promoCode)
 
         val redemptionCount = promoCodeRedemptionMapper.selectCount(
-            QueryWrapper().eq("promo_code_id", promoCode.id)
+            QueryWrapper<PromoCodeRedemption>().eq("promo_code_id", promoCode.id)
         ).toInt()
 
         return AdminPromoCodeDto(
@@ -135,7 +136,7 @@ class AdminPromoCodeServiceImpl(
             ?: throw ResourceNotFoundException("PromoCode not found: $id")
 
         val redemptions = promoCodeRedemptionMapper.selectList(
-            QueryWrapper().eq("promo_code_id", id)
+            QueryWrapper<PromoCodeRedemption>().eq("promo_code_id", id)
         )
 
         val uniqueUsers = redemptions.mapNotNull { it.userId }.distinct().count()
