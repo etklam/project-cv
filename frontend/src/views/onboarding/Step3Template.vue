@@ -50,16 +50,24 @@ onMounted(templateCatalog.loadTemplates);
 
 <template>
   <section data-testid="view-onboarding-step3" class="mx-auto w-full max-w-7xl space-y-8">
-    <div class="space-y-3 text-center">
-      <span class="inline-flex w-fit items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
-        {{ t("onboarding.step3Title") }}
-      </span>
-      <div class="space-y-2">
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+      <div class="rounded-[30px] border border-outline-variant/30 bg-surface-container-low px-6 py-6">
+        <span class="inline-flex w-fit items-center rounded-full bg-primary-fixed px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-on-primary-fixed">
           {{ t("onboarding.step3Title") }}
+        </span>
+        <h2 class="mt-4 font-headline text-3xl font-extrabold tracking-tight text-on-surface sm:text-4xl">
+          Choose the visual system.
         </h2>
-        <p class="mx-auto max-w-2xl text-sm leading-7 text-slate-600">
-          {{ t("onboarding.step3Description") }}
+        <p class="mt-3 max-w-3xl text-sm leading-7 text-on-surface-variant">
+          Pick the first presentation mode for your resume. You can change it later in the editor workspace, but this sets the default direction.
+        </p>
+      </div>
+
+      <div class="rounded-[30px] border border-outline-variant/30 bg-surface-container-lowest px-5 py-5 shadow-sm">
+        <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">Final step</p>
+        <p class="mt-3 text-2xl font-extrabold tracking-tight text-on-surface">03</p>
+        <p class="mt-2 text-sm leading-7 text-on-surface-variant">
+          Select the template family that best matches your current trajectory.
         </p>
       </div>
     </div>
@@ -94,26 +102,26 @@ onMounted(templateCatalog.loadTemplates);
         </div>
       </div>
 
-      <aside class="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_24px_48px_rgba(15,23,42,0.04)]">
+      <aside class="rounded-[32px] border border-outline-variant/30 bg-white p-6 shadow-[0_24px_48px_rgba(15,23,42,0.04)]">
         <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
           {{ t("onboarding.templateSelected") }}
         </p>
-        <p class="mt-3 text-2xl font-semibold tracking-tight text-slate-950" data-testid="selected-template">
-          {{ selectedTemplateKey || t("common.select") }}
+        <p class="mt-3 font-headline text-3xl font-extrabold tracking-tight text-slate-950" data-testid="selected-template">
+          {{ selectedTemplateKey || t("onboarding.chooseTemplate") }}
         </p>
         <p class="mt-3 text-sm leading-7 text-slate-600">
-          Choose a visual system before you enter the dashboard. You can change it later in the editor.
+          This becomes the starting point for your editor workspace and first public preview.
         </p>
 
-        <div class="mt-6 rounded-[24px] border border-blue-100 bg-blue-50/70 p-4">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Ready to publish</p>
-          <p class="mt-2 text-sm leading-7 text-blue-900">
+        <div class="mt-6 rounded-[26px] border border-primary/10 bg-primary-fixed/35 p-4">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Ready to publish</p>
+          <p class="mt-2 text-sm leading-7 text-on-surface">
             The selected template will be used as your default resume workspace theme.
           </p>
         </div>
 
         <button
-          class="mt-6 inline-flex h-12 w-full items-center justify-center rounded-full bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          class="mt-6 inline-flex h-12 w-full items-center justify-center rounded-[18px] bg-gradient-to-br from-primary to-primary-container px-6 text-sm font-semibold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
           :disabled="loading || !selectedTemplateKey"
           @click="handleSubmit"
         >

@@ -73,28 +73,32 @@ const handleSkip = async () => {
 </script>
 
 <template>
-  <section data-testid="view-onboarding-step1" class="mx-auto w-full max-w-3xl space-y-8">
-    <div class="space-y-3 text-center">
-      <span class="inline-flex w-fit items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
-        {{ t("onboarding.step1Title") }}
-      </span>
-      <div class="space-y-2">
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+  <section data-testid="view-onboarding-step1" class="mx-auto w-full max-w-4xl space-y-8">
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px]">
+      <div class="rounded-[30px] border border-primary/10 bg-gradient-to-br from-primary-fixed/80 to-white px-6 py-6">
+        <span class="inline-flex w-fit items-center rounded-full bg-white/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-primary">
           {{ t("onboarding.step1Title") }}
+        </span>
+        <h2 class="mt-4 font-headline text-3xl font-extrabold tracking-tight text-on-surface sm:text-4xl">
+          Set your public identity.
         </h2>
-        <p class="mx-auto max-w-2xl text-sm leading-7 text-slate-600">
-          {{ t("onboarding.step1Description") }}
+        <p class="mt-3 max-w-2xl text-sm leading-7 text-on-surface-variant">
+          Start with the signals people see first. We check username availability while you type so the path to publishing stays clear.
+        </p>
+      </div>
+
+      <div class="rounded-[30px] border border-outline-variant/40 bg-surface-container-lowest px-5 py-5 shadow-sm">
+        <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">Live checks</p>
+        <p class="mt-3 text-2xl font-extrabold tracking-tight text-on-surface">01</p>
+        <p class="mt-2 text-sm leading-7 text-on-surface-variant">
+          Username validation runs in the background and keeps your public route usable.
         </p>
       </div>
     </div>
 
-    <div class="rounded-[28px] border border-blue-100 bg-blue-50/60 px-5 py-4 text-sm leading-7 text-blue-900">
-      Set up your identity first. The username check runs in the background while you type.
-    </div>
-
-    <form @submit="handleSubmit" class="space-y-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_24px_48px_rgba(15,23,42,0.04)] sm:p-6">
+    <form @submit="handleSubmit" class="space-y-6 rounded-[32px] border border-outline-variant/40 bg-white/95 p-6 shadow-[0_24px_48px_rgba(15,23,42,0.04)] sm:p-7">
       <label class="block space-y-2">
-        <span class="text-sm font-semibold text-slate-800">
+        <span class="text-xs font-bold uppercase tracking-[0.22em] text-on-surface-variant">
           {{ t("onboarding.displayNameLabel") }}
         </span>
         <input
@@ -102,14 +106,14 @@ const handleSkip = async () => {
           type="text"
           required
           :placeholder="t('onboarding.displayNamePlaceholder')"
-          class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+          class="h-14 w-full rounded-[24px] border border-outline-variant/40 bg-surface-container-low px-4 text-on-surface placeholder:text-outline transition focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10"
         />
       </label>
 
       <label class="block space-y-2">
-        <span class="text-sm font-semibold text-slate-800">
+        <span class="text-xs font-bold uppercase tracking-[0.22em] text-on-surface-variant">
           {{ t("onboarding.usernameLabel") }}
-          <span class="text-blue-700">*</span>
+          <span class="text-primary">*</span>
         </span>
         <div class="relative">
           <input
@@ -118,7 +122,7 @@ const handleSkip = async () => {
             required
             minlength="3"
             :placeholder="t('onboarding.usernamePlaceholder')"
-            class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-28 text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+            class="h-14 w-full rounded-[24px] border border-outline-variant/40 bg-surface-container-low px-4 pr-32 text-on-surface placeholder:text-outline transition focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10"
             :class="usernameAvailable === false ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-500/10' : usernameAvailable === true ? 'border-emerald-300 focus:border-emerald-400 focus:ring-emerald-500/10' : ''"
             @input="debouncedCheck"
           />
@@ -147,10 +151,10 @@ const handleSkip = async () => {
         {{ error }}
       </p>
 
-      <div class="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+      <div class="flex flex-col gap-3 border-t border-outline-variant/20 pt-4 sm:flex-row sm:justify-end">
         <button
           type="button"
-          class="inline-flex h-12 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          class="inline-flex h-12 items-center justify-center rounded-full border border-outline-variant/40 bg-white px-5 text-sm font-semibold text-on-surface-variant transition hover:border-outline hover:bg-surface-container-low"
           @click="handleSkip"
         >
           {{ t("onboarding.skipStep") }}
@@ -158,7 +162,7 @@ const handleSkip = async () => {
         <button
           type="submit"
           :disabled="loading || usernameAvailable === false"
-          class="inline-flex h-12 items-center justify-center rounded-full bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          class="inline-flex h-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-primary to-primary-container px-6 text-sm font-semibold text-on-primary shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
         >
           {{ loading ? t("common.loading") : t("onboarding.continue") }}
         </button>

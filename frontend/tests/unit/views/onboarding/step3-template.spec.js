@@ -3,6 +3,10 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import Step3Template from "@/views/onboarding/Step3Template.vue";
 import { listTemplates } from "@/api/template";
 
+vi.mock("vue-router", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 vi.mock("@/api/template", () => ({
   listTemplates: vi.fn(),
 }));
