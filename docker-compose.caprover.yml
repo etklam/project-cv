@@ -1,0 +1,63 @@
+# CapRover Docker Compose Configuration
+# This file is specifically designed for CapRover PaaS deployment
+#
+# CapRover Deployment Steps:
+# 1. Push your code to GitHub/GitLab
+# 2. In CapRover dashboard: Apps -> Create New App -> "Docker Compose"
+# 3. Connect your Git repository
+# 4. Configure environment variables in CapRover dashboard
+# 5. Deploy!
+#
+# IMPORTANT: You need to first create a PostgreSQL One-Click App named "project-cv-db"
+
+services:
+  # Backend + PDF Renderer combined
+  # CapRover will route web traffic to the frontend, API calls go through VITE_PROXY_TARGET
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      # Database (CapRover one-click PostgreSQL - must be created first)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://project-cv-db.sail:5432/postgres
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # JWT Secret (generate strong secret in CapRver dashboard)
+      JWT_SECRET: ${JWT_SECRET}
+
+      # File upload path
+      APP_UPLOAD_PATH: /app/data/uploads
+
+      # PDF export URLs
+      APP_EXPORT_FRONTEND_BASE_URL: ${APP_BASE_URL:-https://captain.rnsj.913555.xyz}
+      APP_EXPORT_RENDERER_BASE_URL: http://127.0.0.1:3100
+    volumes:
+      - backend-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PDF Renderer service (internal only)
+  pdf-renderer:
+    build:
+      context: ./services/pdf-renderer
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3100
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3100/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+# CapRover persistent volumes
+volumes:
+  backend-data:
+
+# Note: CapRover handles networking internally
+# The frontend is a separate CapRover app (see CAPROVER_DEPLOYMENT.md)
