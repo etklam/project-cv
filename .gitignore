@@ -2,6 +2,9 @@
 .idea/
 .vscode/
 
+# Claude Code
+.claude/
+
 # Frontend
 frontend/node_modules/
 frontend/dist/
@@ -17,3 +20,20 @@ data/
 
 # Logs
 *.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# OS
+Thumbs.db
+.DS_Store?
