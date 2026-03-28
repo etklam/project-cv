@@ -38,6 +38,7 @@ defineProps({
   margin: 0 0 0.5rem;
   font-size: 1.05rem;
   font-weight: 700;
+  color: var(--editor-theme-accent-strong, #0f172a);
 }
 .timeline {
   list-style: none;
@@ -47,7 +48,7 @@ defineProps({
   gap: 0.65rem;
 }
 .timeline__item {
-  border-left: 3px solid #cbd5e1;
+  border-left: 3px solid var(--editor-theme-border, #cbd5e1);
   padding-left: 0.75rem;
 }
 .timeline__header {
@@ -59,14 +60,14 @@ defineProps({
 }
 .timeline__company {
   margin: 0.1rem 0;
-  color: #475569;
+  color: var(--editor-theme-text-muted, #475569);
 }
 .timeline__desc {
   margin: 0;
-  color: #334155;
+  color: var(--editor-theme-accent-strong, #334155);
   line-height: 1.5;
 }
 .muted {
-  color: #94a3b8;
+  color: var(--editor-theme-text-muted, #94a3b8);
 }
 </style>

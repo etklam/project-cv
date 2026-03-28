@@ -1,11 +1,28 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import CvTemplateRenderer from "@/components/cv-templates/CvTemplateRenderer.vue";
+import EditorFormPane from "@/components/editor/EditorFormPane.vue";
+import EditorPreviewPane from "@/components/editor/EditorPreviewPane.vue";
+import EditorStylePane from "@/components/editor/EditorStylePane.vue";
+import EditorToolbar from "@/components/editor/EditorToolbar.vue";
+import ContactEditor from "@/components/editor/sections/ContactEditor.vue";
+import CustomSectionEditor from "@/components/editor/sections/CustomSectionEditor.vue";
+import EducationEditor from "@/components/editor/sections/EducationEditor.vue";
+import ExperienceEditor from "@/components/editor/sections/ExperienceEditor.vue";
+import SkillsEditor from "@/components/editor/sections/SkillsEditor.vue";
+import SummaryEditor from "@/components/editor/sections/SummaryEditor.vue";
+import {
+  buildMetadataPayload,
+  buildPreviewCv,
+  buildSectionsPayload,
+  createEmptyDraft,
+  normalizeCvToDraft,
+} from "@/components/editor/editorDraftAdapters";
+import { useEditorAutosave } from "@/composables/useEditorAutosave";
 import { useTemplateCatalog } from "@/composables/useTemplateCatalog";
-import { useCvStore } from "@/stores/cv";
 import { exportCvPdf } from "@/api/export";
+import { useCvStore } from "@/stores/cv";
 
 const { t } = useI18n();
 const route = useRoute();
@@ -14,6 +31,19 @@ const cvId = computed(() => route?.params?.id || "");
 
 const loadError = ref("");
 const saveMessage = ref("");
+const sectionsMessage = ref("");
+const exportMessage = ref("");
+const exportError = ref("");
+const activeTab = ref("preview");
+const previewZoom = ref(85);
+const editorDraft = ref(createEmptyDraft());
+const hydratingDraft = ref(true);
+const previewAppearance = ref({
+  surface: "studio",
+  accent: "ink",
+  density: "comfortable",
+});
+
 const {
   supportedTemplates: templates,
   loading: templatesLoading,
@@ -21,53 +51,48 @@ const {
   loadTemplates: loadTemplateOptions,
 } = useTemplateCatalog();
 
-const form = reactive({
-  title: "",
-  templateKey: "minimal",
-  isPublic: false,
-  slug: "",
-});
-const sectionsDraft = ref([]);
-const sectionsMessage = ref("");
-const sectionErrors = ref({});
-const exportMessage = ref("");
-const exportError = ref("");
+const autosave = useEditorAutosave(async () => {
+  await saveMetadata({ silent: true });
+  await saveSections({ silent: true });
+}, { delay: 800 });
 
-function normalizeSlug(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+function hydrateDraft(cv, sections) {
+  hydratingDraft.value = true;
+  editorDraft.value = normalizeCvToDraft(cv, sections);
+  previewZoom.value = 85;
+  saveMessage.value = "";
+  sectionsMessage.value = "";
+  loadError.value = "";
 }
 
-function applyCvToForm(cv) {
-  form.title = cv?.title || "";
-  form.templateKey = cv?.templateKey || "minimal";
-  form.isPublic = Boolean(cv?.isPublic);
-  form.slug = cv?.slug || "";
-  try {
-    sectionsDraft.value = (cvStore.sections || []).map((section) => ({
-      ...section,
-      content: JSON.parse(JSON.stringify(section.content || {})),
-    }));
-  } catch (e) {
-    console.error("Failed to parse section content:", e);
-    sectionsDraft.value = (cvStore.sections || []).map((section) => ({
-      ...section,
-      content: {},
-    }));
+function resetContact() {
+  const normalized = normalizeCvToDraft(cvStore.currentCv, cvStore.sections);
+  editorDraft.value.contact = normalized.contact;
+}
+
+const activeCv = computed(() => buildPreviewCv(editorDraft.value, cvStore.currentCv || {}));
+const previewSections = computed(() => buildSectionsPayload(editorDraft.value).sections);
+const currentUser = computed(() => cvStore.currentCv?.user || {});
+const publicPath = computed(() => {
+  if (activeCv.value?.isPublic && activeCv.value?.slug) {
+    const username = currentUser.value?.username || "{username}";
+    return `/u/${username}/${activeCv.value.slug}`;
   }
-}
-
-const activeCv = computed(() => ({
-  ...(cvStore.currentCv || {}),
-  title: form.title || cvStore.currentCv?.title || "",
-  templateKey: form.templateKey || cvStore.currentCv?.templateKey || "minimal",
-  isPublic: form.isPublic,
-  slug: form.slug || null,
-}));
+  return "";
+});
+const draftCount = computed(() => previewSections.value.length);
+const autosaveLabel = computed(() => {
+  if (autosave.saving.value) {
+    return "Autosaving...";
+  }
+  if (autosave.error.value) {
+    return autosave.error.value;
+  }
+  if (autosave.lastSavedAt.value) {
+    return "Autosaved just now";
+  }
+  return "Ready to edit";
+});
 
 const loadCvMetadata = async () => {
   loadError.value = "";
@@ -75,91 +100,52 @@ const loadCvMetadata = async () => {
     loadError.value = t("editor.cvNotFound");
     return;
   }
+
   try {
     await cvStore.loadCv(cvId.value);
-    applyCvToForm(cvStore.currentCv);
+    hydrateDraft(cvStore.currentCv, cvStore.sections);
+    await nextTick();
+    autosave.lastSavedAt.value = new Date().toISOString();
   } catch (requestError) {
     loadError.value =
       requestError?.response?.data?.message || requestError?.message || t("editor.error");
+  } finally {
+    hydratingDraft.value = false;
   }
 };
 
-const saveMetadata = async () => {
+async function saveMetadata(options = {}) {
+  const payload = buildMetadataPayload(editorDraft.value);
   saveMessage.value = "";
   loadError.value = "";
-  if (!form.title.trim()) {
+
+  if (!payload.title) {
     loadError.value = t("editor.validation.titleRequired");
-    return;
+    throw new Error(loadError.value);
   }
-  const normalizedSlug = normalizeSlug(form.slug);
-  if (form.isPublic && !normalizedSlug) {
+
+  if (payload.isPublic && !payload.slug) {
     loadError.value = t("editor.validation.publicSlugRequired");
-    return;
+    throw new Error(loadError.value);
   }
 
-  const payload = {
-    title: form.title.trim(),
-    templateKey: form.templateKey || "minimal",
-    isPublic: form.isPublic,
-    slug: form.isPublic ? normalizedSlug : null,
-  };
+  await cvStore.updateMetadata(cvId.value, payload);
 
-  try {
-    await cvStore.updateMetadata(cvId.value, payload);
-    applyCvToForm(cvStore.currentCv);
+  if (!options.silent) {
     saveMessage.value = t("editor.saved");
-  } catch (requestError) {
-    loadError.value =
-      requestError?.response?.data?.message || requestError?.message || t("errors.general");
   }
-};
+}
 
-onMounted(() => {
-  loadCvMetadata();
-  loadTemplateOptions();
-});
-
-const updateSectionField = (index, updater) => {
-  const next = [...sectionsDraft.value];
-  next[index] = updater(next[index]);
-  sectionsDraft.value = next;
-};
-
-const updateSectionContentFromJson = (index, jsonString) => {
-  const trimmed = jsonString?.trim() || "{}";
-  if (!trimmed) {
-    sectionErrors.value[index] = "Content cannot be empty";
-    return;
-  }
-  try {
-    const parsed = JSON.parse(trimmed);
-    sectionErrors.value[index] = "";
-    updateSectionField(index, (s) => ({ ...s, content: parsed }));
-  } catch (e) {
-    sectionErrors.value[index] = `Invalid JSON: ${e.message}`;
-  }
-};
-
-const saveSections = async () => {
+async function saveSections(options = {}) {
   sectionsMessage.value = "";
   loadError.value = "";
-
-  const hasErrors = Object.values(sectionErrors.value).some((err) => err);
-  if (hasErrors) {
-    loadError.value = t("editor.fixJsonErrors");
-    return;
-  }
-
-  try {
-    await cvStore.updateSections(cvId.value, { sections: sectionsDraft.value });
+  await cvStore.updateSections(cvId.value, buildSectionsPayload(editorDraft.value));
+  if (!options.silent) {
     sectionsMessage.value = t("editor.sectionsSaved");
-  } catch (error) {
-    loadError.value =
-      error?.response?.data?.message || error?.message || t("errors.general");
   }
-};
+}
 
-const exportPdf = async () => {
+async function exportPdf() {
   exportMessage.value = "";
   exportError.value = "";
   try {
@@ -169,60 +155,51 @@ const exportPdf = async () => {
     exportError.value =
       error?.response?.data?.message || error?.message || t("export.failed");
   }
-};
+}
 
-const currentUser = computed(() => cvStore.currentCv?.user || {});
-const publicPath = computed(() => {
-  if (activeCv.value?.isPublic && activeCv.value?.slug) {
-    const username = currentUser.value?.username || "{username}";
-    return `/u/${username}/${activeCv.value.slug}`;
-  }
-  return "";
+function zoomIn() {
+  previewZoom.value = Math.min(previewZoom.value + 5, 125);
+}
+
+function zoomOut() {
+  previewZoom.value = Math.max(previewZoom.value - 5, 50);
+}
+
+watch(
+  () => JSON.stringify({
+    metadata: buildMetadataPayload(editorDraft.value),
+    sections: buildSectionsPayload(editorDraft.value).sections,
+  }),
+  () => {
+    if (hydratingDraft.value || !cvId.value) {
+      return;
+    }
+    autosave.queueAutosave();
+  },
+);
+
+onMounted(() => {
+  loadCvMetadata();
+  loadTemplateOptions();
 });
-
-const draftCount = computed(() => sectionsDraft.value.length);
 </script>
 
 <template>
   <section
     data-testid="view-editor"
-    class="mx-auto max-w-7xl px-4 py-6 text-[#09090B] sm:px-6 lg:px-8 lg:py-10"
+    class="mx-auto max-w-[1600px] px-4 py-6 text-on-background sm:px-6 lg:px-8 lg:py-8"
   >
     <div class="space-y-6">
-      <header class="rounded-[2rem] border border-gray-200 bg-white px-5 py-5 sm:px-6 lg:px-8">
-        <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div class="space-y-3">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-gray-400">
-              Editor workspace
-            </p>
-            <div>
-              <h1 class="text-3xl font-semibold tracking-tight text-[#18181B] sm:text-4xl">
-                {{ t("editor.title") }}
-              </h1>
-              <p class="mt-3 max-w-2xl text-sm leading-7 text-gray-600 sm:text-base">
-                {{ t("editor.metadata") }}
-              </p>
-            </div>
-          </div>
-
-          <div class="flex flex-wrap gap-3">
-            <div class="rounded-2xl border border-gray-200 bg-[#FAFAFA] px-4 py-3">
-              <p class="text-xs font-medium uppercase tracking-[0.18em] text-gray-400">
-                {{ t("editor.sections") }}
-              </p>
-              <p class="mt-1 text-lg font-semibold text-[#18181B]">{{ draftCount }}</p>
-            </div>
-            <div class="rounded-2xl border border-gray-200 bg-[#FAFAFA] px-4 py-3">
-              <p class="text-xs font-medium uppercase tracking-[0.18em] text-gray-400">
-                {{ t("editor.template") }}
-              </p>
-              <p class="mt-1 text-lg font-semibold text-[#18181B]">
-                {{ form.templateKey || "minimal" }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
+      <EditorToolbar
+        :document-title="editorDraft.metadata.title"
+        :autosave-label="autosaveLabel"
+        :active-tab="activeTab"
+        :is-public="editorDraft.metadata.isPublic"
+        :export-running="false"
+        @update:active-tab="activeTab = $event"
+        @export="exportPdf"
+        @publish="saveMetadata"
+      />
 
       <div
         v-if="cvStore.loading"
@@ -241,288 +218,178 @@ const draftCount = computed(() => sectionsDraft.value.length);
         {{ loadError }}
       </div>
 
-      <div v-else class="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.92fr)]">
-        <div class="space-y-6">
-          <form
-            v-if="!loadError"
-            class="space-y-6"
-            data-testid="editor-form"
-            @submit.prevent="saveMetadata"
-          >
-            <section class="rounded-[2rem] border border-gray-200 bg-white p-5 sm:p-6">
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-400">
-                    Document settings
-                  </p>
-                  <h2 class="mt-2 text-xl font-semibold tracking-tight text-[#18181B]">
-                    {{ t("editor.metadata") }}
-                  </h2>
-                </div>
-                <span
-                  class="rounded-full border border-[#18181B]/10 bg-[#FAFAFA] px-3 py-1 text-xs font-semibold text-[#18181B]"
-                >
-                  Draft
-                </span>
-              </div>
-
-              <div class="mt-6 grid gap-5">
-                <div class="space-y-2">
-                  <label class="block text-sm font-medium text-gray-700">
-                    {{ t("editor.title") }}
-                    <span class="text-[#EC4899]">*</span>
-                  </label>
-                  <input
-                    v-model="form.title"
-                    class="h-11 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-[#18181B] placeholder:text-gray-400 focus:border-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#18181B]/10"
-                    data-testid="editor-title-input"
-                  />
-                </div>
-
-                <div class="grid gap-5 sm:grid-cols-2">
-                  <div class="space-y-2">
-                    <label class="block text-sm font-medium text-gray-700">
-                      {{ t("editor.template") }}
-                    </label>
-                    <select
-                      v-model="form.templateKey"
-                      class="h-11 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-[#18181B] focus:border-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#18181B]/10"
-                      data-testid="editor-template-select"
-                    >
-                      <option
-                        v-for="template in templates"
-                        :key="template.key"
-                        :value="template.key"
-                      >
-                        {{ template.displayName || template.key }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="space-y-2">
-                    <label class="block text-sm font-medium text-gray-700">
-                      {{ t("editor.slug") }}
-                    </label>
-                    <input
-                      v-model="form.slug"
-                      :disabled="!form.isPublic"
-                      class="h-11 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-[#18181B] placeholder:text-gray-400 focus:border-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#18181B]/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-                      data-testid="editor-slug-input"
-                      @blur="form.slug = normalizeSlug(form.slug)"
-                    />
-                  </div>
-                </div>
-
-                <div class="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-[#FAFAFA] p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div class="flex items-center gap-3">
-                    <input
-                      v-model="form.isPublic"
-                      type="checkbox"
-                      id="is-public"
-                      class="h-4 w-4 rounded border-gray-300 text-[#18181B] focus:ring-[#18181B]/20"
-                      data-testid="editor-public-toggle"
-                    />
-                    <label for="is-public" class="cursor-pointer text-sm font-medium text-gray-700">
-                      {{ t("editor.isPublic") }}
-                    </label>
-                  </div>
-                  <p class="text-xs text-gray-500">{{ t("editor.isPublicDescription") }}</p>
-                </div>
-
-                <p class="text-xs leading-6 text-gray-500">{{ t("editor.slugDescription") }}</p>
-
-                <div v-if="templatesLoading" class="text-sm text-gray-600" data-testid="editor-templates-loading">
-                  {{ t("common.loading") }}
-                </div>
-                <div v-else-if="templatesError" class="text-sm text-red-600" data-testid="editor-templates-error">
-                  {{ templatesError }}
-                </div>
-
-                <div class="flex flex-col gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                  <button
-                    type="submit"
-                    :disabled="cvStore.saving"
-                    class="inline-flex h-11 items-center justify-center rounded-full bg-[#18181B] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#3F3F46] disabled:cursor-not-allowed disabled:opacity-50"
-                    data-testid="editor-save-button"
-                  >
-                    {{ cvStore.saving ? t("editor.saving") : t("editor.saveMetadata") }}
-                  </button>
-                  <p v-if="saveMessage" class="text-sm font-medium text-emerald-600" data-testid="editor-save-message">
-                    {{ saveMessage }}
-                  </p>
-                </div>
-              </div>
-            </section>
-          </form>
-
-          <section class="rounded-[2rem] border border-gray-200 bg-white p-5 sm:p-6">
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div
+        v-else
+        class="grid min-h-[calc(100vh-12rem)] gap-6 xl:grid-cols-[minmax(0,1.02fr)_minmax(540px,0.98fr)]"
+      >
+        <EditorFormPane>
+          <div class="space-y-8">
+            <header class="flex flex-col gap-3 border-b border-slate-100 pb-6 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-400">
-                  Section editor
+                <p class="text-[11px] font-bold uppercase tracking-[0.28em] text-slate-500">
+                  Editor canvas
                 </p>
-                <h2 class="mt-2 text-xl font-semibold tracking-tight text-[#18181B]">
-                  {{ t("editor.sections") }}
+                <h2 class="mt-2 font-headline text-3xl font-extrabold tracking-tight text-on-surface">
+                  Build the narrative
                 </h2>
               </div>
-              <p class="text-sm text-gray-500">{{ t("common.optional") }}</p>
-            </div>
+              <div class="rounded-[24px] border border-slate-200 bg-surface-container-low px-4 py-3 text-sm text-slate-600">
+                {{ draftCount }} live sections
+              </div>
+            </header>
 
-            <div class="mt-6 space-y-4">
-              <div
-                v-for="(section, index) in sectionsDraft"
-                :key="section.id || index"
-                class="rounded-2xl border border-gray-200 bg-[#FAFAFA] p-4 sm:p-5"
-                :data-testid="`section-editor-${section.sectionType}`"
-              >
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <p class="font-semibold tracking-tight text-[#18181B]">
-                    {{ t(`sections.${section.sectionType}.title`) }}
-                  </p>
-                  <span class="text-xs uppercase tracking-[0.18em] text-gray-400">
-                    {{ section.sectionType }}
+            <EditorStylePane
+              v-if="activeTab === 'style'"
+              :templates="templates"
+              :loading="templatesLoading"
+              :error="templatesError"
+              :metadata="editorDraft.metadata"
+              :appearance="previewAppearance"
+              @update:template-key="editorDraft.metadata.templateKey = $event"
+              @update:appearance="previewAppearance = $event"
+            />
+
+            <form
+              v-else
+              data-testid="editor-form"
+              class="space-y-6"
+              @submit.prevent="saveMetadata"
+            >
+              <section class="space-y-4 rounded-[28px] border border-slate-200 bg-surface-container-lowest p-5">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                      Document settings
+                    </p>
+                    <h3 class="mt-1 font-headline text-lg font-extrabold tracking-tight text-on-surface">
+                      Metadata
+                    </h3>
+                  </div>
+                  <span class="rounded-full bg-primary-fixed px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-on-primary-fixed-variant">
+                    Workspace
                   </span>
                 </div>
 
-                <div class="mt-4">
-                  <template v-if="section.sectionType === 'summary'">
-                    <textarea
-                      v-model="section.content.text"
-                      rows="3"
-                      class="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-[#18181B] placeholder:text-gray-400 focus:border-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#18181B]/10"
-                      data-testid="section-summary-input"
-                      @input="updateSectionField(index, (s) => ({ ...s, content: { ...s.content, text: section.content.text } }))"
-                    />
-                  </template>
-                  <template v-else-if="section.sectionType === 'skills'">
-                    <input
-                      :value="(section.content.items || []).join(', ')"
-                      class="h-11 w-full rounded-2xl border border-gray-200 bg-white px-4 text-sm text-[#18181B] placeholder:text-gray-400 focus:border-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#18181B]/10"
-                      data-testid="section-skills-input"
-                      @input="
-                        (event) =>
-                          updateSectionField(index, (s) => ({
-                            ...s,
-                            content: { ...s.content, items: event.target.value.split(',').map((v) => v.trim()).filter(Boolean) },
-                          }))
-                      "
-                    />
-                  </template>
-                  <template v-else>
-                    <textarea
-                      :value="JSON.stringify(section.content)"
-                      rows="4"
-                      :class="[
-                        'w-full rounded-2xl border bg-white px-4 py-3 font-mono text-sm text-[#18181B] placeholder:text-gray-400 focus:outline-none focus:ring-2',
-                        sectionErrors[index]
-                          ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
-                          : 'border-gray-200 focus:border-[#18181B] focus:ring-[#18181B]/10',
-                      ]"
-                      data-testid="section-generic-input"
-                      @input="(event) => updateSectionContentFromJson(index, event.target.value)"
-                    />
-                    <p v-if="sectionErrors[index]" class="mt-2 text-xs font-medium text-red-600" :data-testid="`section-error-${index}`">
-                      {{ sectionErrors[index] }}
-                    </p>
-                  </template>
+                <div class="space-y-2">
+                  <label class="block text-sm font-medium text-slate-700">
+                    {{ t("editor.title") }}
+                  </label>
+                  <input
+                    v-model="editorDraft.metadata.title"
+                    data-testid="editor-title-input"
+                    class="h-12 w-full rounded-[24px] border border-slate-200 bg-surface-container-low px-4 text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10"
+                  />
                 </div>
-              </div>
-            </div>
 
-            <div class="mt-5 flex flex-col gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="button"
-                :disabled="cvStore.saving"
-                class="inline-flex h-11 items-center justify-center rounded-full bg-[#EC4899] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#BE185D] disabled:cursor-not-allowed disabled:opacity-50"
-                data-testid="editor-save-sections"
-                @click="saveSections"
-              >
-                {{ cvStore.saving ? t("editor.saving") : t("editor.saveSections") }}
-              </button>
-              <p v-if="sectionsMessage" class="text-sm font-medium text-emerald-600" data-testid="editor-sections-message">
-                {{ sectionsMessage }}
-              </p>
-            </div>
-          </section>
+                <div class="grid gap-4 md:grid-cols-2">
+                  <div class="space-y-2">
+                    <label class="block text-sm font-medium text-slate-700">
+                      {{ t("editor.slug") }}
+                    </label>
+                    <input
+                      v-model="editorDraft.metadata.slug"
+                      :disabled="!editorDraft.metadata.isPublic"
+                      data-testid="editor-slug-input"
+                      class="h-12 w-full rounded-[24px] border border-slate-200 bg-surface-container-low px-4 text-sm text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                    />
+                  </div>
+                </div>
 
-          <section class="rounded-[2rem] border border-gray-200 bg-white p-5 sm:p-6">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-400">
-                  Export
+                <div class="flex flex-col gap-3 rounded-[24px] border border-slate-200 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <label class="inline-flex items-center gap-3 text-sm font-medium text-slate-700">
+                    <input
+                      v-model="editorDraft.metadata.isPublic"
+                      type="checkbox"
+                      class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/20"
+                      data-testid="editor-public-toggle"
+                    />
+                    {{ t("editor.isPublic") }}
+                  </label>
+                  <p class="text-xs text-slate-500">{{ t("editor.isPublicDescription") }}</p>
+                </div>
+
+                <div class="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    type="submit"
+                    class="inline-flex h-11 items-center justify-center rounded-full bg-on-surface px-6 text-sm font-semibold text-white transition hover:bg-slate-700"
+                    data-testid="editor-save-button"
+                  >
+                    {{ t("editor.saveMetadata") }}
+                  </button>
+                  <p v-if="saveMessage" data-testid="editor-save-message" class="text-sm font-medium text-emerald-600">
+                    {{ saveMessage }}
+                  </p>
+                </div>
+              </section>
+            </form>
+
+            <div class="space-y-6 rounded-[28px] border border-slate-200 bg-surface-container-lowest p-5">
+              <ContactEditor
+                :model-value="editorDraft.contact.content"
+                :saving="cvStore.saving"
+                @update:model-value="editorDraft.contact.content = $event"
+                @submit="saveSections"
+                @reset="resetContact"
+              />
+
+              <SummaryEditor
+                :model-value="editorDraft.summary.content.text"
+                @update:model-value="editorDraft.summary.content.text = $event"
+              />
+
+              <ExperienceEditor
+                :items="editorDraft.experience.content.items"
+                @update:items="editorDraft.experience.content.items = $event"
+              />
+
+              <EducationEditor
+                :items="editorDraft.education.content.items"
+                @update:items="editorDraft.education.content.items = $event"
+              />
+
+              <SkillsEditor
+                :items="editorDraft.skills.content.items"
+                @update:items="editorDraft.skills.content.items = $event"
+              />
+
+              <CustomSectionEditor
+                :sections="editorDraft.customSections"
+                @update:sections="editorDraft.customSections = $event"
+              />
+
+              <div class="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <button
+                  type="button"
+                  class="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-sm font-semibold text-white transition hover:opacity-90"
+                  data-testid="editor-save-sections"
+                  @click="saveSections"
+                >
+                  {{ t("editor.saveSections") }}
+                </button>
+                <p v-if="sectionsMessage" data-testid="editor-sections-message" class="text-sm font-medium text-emerald-600">
+                  {{ sectionsMessage }}
                 </p>
-                <h2 class="mt-2 text-xl font-semibold tracking-tight text-[#18181B]">
-                  {{ t("export.title") }}
-                </h2>
               </div>
-              <button
-                type="button"
-                class="inline-flex h-11 items-center justify-center rounded-full border border-gray-200 bg-white px-6 text-sm font-semibold text-[#18181B] transition-colors hover:border-gray-300 hover:bg-gray-50"
-                data-testid="editor-export-button"
-                @click="exportPdf"
-              >
-                {{ t("export.pdf") }}
-              </button>
             </div>
-            <p v-if="exportMessage" class="mt-4 text-sm font-medium text-emerald-600" data-testid="editor-export-message">
-              {{ exportMessage }}
-            </p>
-            <p v-if="exportError" class="mt-4 text-sm font-medium text-red-600" data-testid="editor-export-error">
-              {{ exportError }}
-            </p>
-          </section>
+          </div>
+        </EditorFormPane>
+
+        <div class="xl:sticky xl:top-24 xl:self-start">
+          <EditorPreviewPane
+            :active-tab="activeTab"
+            :is-public="activeCv.isPublic"
+            :public-path="publicPath"
+            :zoom="previewZoom"
+            :cv="activeCv"
+            :sections="previewSections"
+            :appearance="previewAppearance"
+            :export-message="exportMessage"
+            :export-error="exportError"
+            @zoom-in="zoomIn"
+            @zoom-out="zoomOut"
+            @export="exportPdf"
+          />
         </div>
-
-        <aside class="space-y-6 xl:sticky xl:top-6 self-start">
-          <section class="rounded-[2rem] border border-gray-200 bg-white p-5 sm:p-6">
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-400">
-                  Live link
-                </p>
-                <h2 class="mt-2 text-xl font-semibold tracking-tight text-[#18181B]">
-                  {{ t("editor.publicLink", { url: publicPath || "—" }) }}
-                </h2>
-              </div>
-              <span
-                :class="[
-                  'rounded-full px-3 py-1 text-xs font-semibold',
-                  activeCv?.isPublic ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500',
-                ]"
-              >
-                {{ activeCv?.isPublic ? t("editor.isPublic") : "Private" }}
-              </span>
-            </div>
-
-            <p v-if="publicPath" class="mt-4 break-all text-sm leading-6 text-gray-600" data-testid="editor-public-path">
-              {{ t("editor.publicLink", { url: publicPath }) }}
-            </p>
-            <p v-else class="mt-4 text-sm text-gray-500">
-              {{ t("editor.slugHint") }}
-            </p>
-          </section>
-
-          <section class="overflow-hidden rounded-[2rem] border border-gray-200 bg-white">
-            <div class="border-b border-gray-100 px-5 py-4 sm:px-6">
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-gray-400">
-                Preview
-              </p>
-              <h2 class="mt-2 text-xl font-semibold tracking-tight text-[#18181B]">
-                {{ t("editor.preview") }}
-              </h2>
-            </div>
-            <div class="p-4 sm:p-6">
-              <div class="overflow-auto rounded-[1.5rem] border border-gray-100 bg-[#FAFAFA] p-3 sm:p-4">
-                <CvTemplateRenderer
-                  :template-key="activeCv?.templateKey || form.templateKey || 'minimal'"
-                  :cv="activeCv"
-                  :sections="cvStore.sections"
-                  mode="editor-preview"
-                />
-              </div>
-            </div>
-          </section>
-        </aside>
       </div>
     </div>
   </section>

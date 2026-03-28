@@ -35,6 +35,7 @@ defineProps({
   margin: 0 0 0.5rem;
   font-size: 1.05rem;
   font-weight: 700;
+  color: var(--editor-theme-accent-strong, #0f172a);
 }
 .edu-list {
   list-style: none;
@@ -52,9 +53,9 @@ defineProps({
 }
 .edu__degree {
   margin: 0.05rem 0;
-  color: #475569;
+  color: var(--editor-theme-text-muted, #475569);
 }
 .muted {
-  color: #94a3b8;
+  color: var(--editor-theme-text-muted, #94a3b8);
 }
 </style>

@@ -26,10 +26,11 @@ defineProps({
   margin: 0 0 0.35rem;
   font-size: 1.05rem;
   font-weight: 700;
+  color: var(--editor-theme-accent-strong, #0f172a);
 }
 .section__body {
   margin: 0;
-  color: #475569;
+  color: var(--editor-theme-text-muted, #475569);
   line-height: 1.6;
 }
 </style>

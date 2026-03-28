@@ -1,6 +1,7 @@
 <script setup>
 import { useI18n } from "vue-i18n";
 import { computed } from "vue";
+import ContactSection from "@/components/sections/ContactSection.vue";
 import SummarySection from "@/components/sections/SummarySection.vue";
 
 defineOptions({
@@ -15,10 +16,12 @@ const { t } = useI18n();
 const props = defineProps({
   cv: { type: Object, default: () => ({}) },
   sections: { type: Array, default: () => [] },
+  appearance: { type: Object, default: () => ({}) },
   mode: { type: String, default: "public" },
 });
 
 const sectionComponentMap = {
+  contact: ContactSection,
   summary: SummarySection,
   experience: ExperienceSection,
   education: EducationSection,
@@ -68,16 +71,17 @@ const mainSections = computed(() =>
 }
 .sidebar__aside {
   padding: 1rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--editor-theme-aside, #f8fafc);
+  border: 1px solid var(--editor-theme-border, #e2e8f0);
   border-radius: 1rem;
 }
 .sidebar__title {
   margin: 0 0 0.75rem;
+  color: var(--editor-theme-accent-strong, #0f172a);
 }
 .sidebar__main {
   padding: 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--editor-theme-border, #e2e8f0);
   border-radius: 1rem;
   background: #ffffff;
   display: grid;

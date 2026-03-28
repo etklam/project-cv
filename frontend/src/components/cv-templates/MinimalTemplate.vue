@@ -1,5 +1,6 @@
 <script setup>
 import { useI18n } from "vue-i18n";
+import ContactSection from "@/components/sections/ContactSection.vue";
 import SummarySection from "@/components/sections/SummarySection.vue";
 import ExperienceSection from "@/components/sections/ExperienceSection.vue";
 import EducationSection from "@/components/sections/EducationSection.vue";
@@ -14,10 +15,12 @@ defineOptions({
 const props = defineProps({
   cv: { type: Object, default: () => ({}) },
   sections: { type: Array, default: () => [] },
+  appearance: { type: Object, default: () => ({}) },
   mode: { type: String, default: "public" },
 });
 
 const sectionComponentMap = {
+  contact: ContactSection,
   summary: SummarySection,
   experience: ExperienceSection,
   education: EducationSection,
@@ -48,7 +51,15 @@ const sectionComponentMap = {
   padding: 1.5rem;
   background: #ffffff;
   border-radius: 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--editor-theme-border, #e2e8f0);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--editor-theme-accent, #334155) 8%, transparent);
+}
+.minimal__header {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--editor-theme-border, #e2e8f0);
+}
+.minimal__header h1 {
+  color: var(--editor-theme-accent-strong, #0f172a);
 }
 @media (max-width: 640px) {
   .minimal {

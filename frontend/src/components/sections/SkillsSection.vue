@@ -29,6 +29,7 @@ defineProps({
   margin: 0 0 0.35rem;
   font-size: 1.05rem;
   font-weight: 700;
+  color: var(--editor-theme-accent-strong, #0f172a);
 }
 .chips {
   display: flex;
@@ -38,12 +39,12 @@ defineProps({
 .chip {
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
-  background: #e2e8f0;
-  color: #0f172a;
+  background: var(--editor-theme-accent-soft, #e2e8f0);
+  color: var(--editor-theme-accent-strong, #0f172a);
   font-size: 0.9rem;
 }
 .chip--muted {
-  background: #f1f5f9;
-  color: #94a3b8;
+  background: color-mix(in srgb, var(--editor-theme-accent-soft, #f1f5f9) 60%, white);
+  color: var(--editor-theme-text-muted, #94a3b8);
 }
 </style>

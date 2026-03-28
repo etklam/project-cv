@@ -1,5 +1,6 @@
 <script setup>
 import { useI18n } from "vue-i18n";
+import ContactSection from "@/components/sections/ContactSection.vue";
 import SummarySection from "@/components/sections/SummarySection.vue";
 
 defineOptions({
@@ -14,10 +15,12 @@ const { t } = useI18n();
 const props = defineProps({
   cv: { type: Object, default: () => ({}) },
   sections: { type: Array, default: () => [] },
+  appearance: { type: Object, default: () => ({}) },
   mode: { type: String, default: "public" },
 });
 
 const sectionComponentMap = {
+  contact: ContactSection,
   summary: SummarySection,
   experience: ExperienceSection,
   education: EducationSection,
@@ -48,9 +51,9 @@ const sectionComponentMap = {
 <style scoped>
 .modern {
   padding: 1.5rem;
-  background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+  background: linear-gradient(145deg, #ffffff, var(--editor-theme-aside, #f8fafc));
   border-radius: 1.25rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--editor-theme-border, #e2e8f0);
   display: grid;
   gap: 1rem;
 }
@@ -70,10 +73,13 @@ const sectionComponentMap = {
 .modern__pill {
   padding: 0.35rem 0.75rem;
   border-radius: 999px;
-  background: #0ea5e9;
+  background: var(--editor-theme-accent, #0ea5e9);
   color: white;
   font-weight: 600;
   font-size: 0.9rem;
+}
+.modern__header h1 {
+  color: var(--editor-theme-accent-strong, #0f172a);
 }
 .modern__grid {
   display: grid;

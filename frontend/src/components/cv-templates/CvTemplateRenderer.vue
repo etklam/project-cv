@@ -15,6 +15,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  appearance: {
+    type: Object,
+    default: () => ({}),
+  },
   mode: {
     type: String,
     default: "public",
@@ -30,6 +34,7 @@ const resolvedComponent = computed(() => resolveTemplateComponent(props.template
     :template-key="templateKey"
     :cv="cv"
     :sections="sections"
+    :appearance="appearance"
     :mode="mode"
   />
 </template>
