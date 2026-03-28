@@ -37,7 +37,6 @@ const handleSubmit = async () => {
   loading.value = true;
   error.value = "";
   try {
-    // Complete onboarding with selected template
     router.push("/dashboard");
   } catch (err) {
     error.value = err?.response?.data?.message || t("errors.general");
@@ -50,50 +49,77 @@ onMounted(templateCatalog.loadTemplates);
 </script>
 
 <template>
-  <section data-testid="view-onboarding-step3">
-    <div class="text-center mb-8">
-      <h2 class="text-xl sm:text-2xl font-bold text-gray-900">{{ t("onboarding.step3Title") }}</h2>
-      <p class="text-gray-600 mt-2">{{ t("onboarding.step3Description") }}</p>
+  <section data-testid="view-onboarding-step3" class="mx-auto w-full max-w-7xl space-y-8">
+    <div class="space-y-3 text-center">
+      <span class="inline-flex w-fit items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
+        {{ t("onboarding.step3Title") }}
+      </span>
+      <div class="space-y-2">
+        <h2 class="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+          {{ t("onboarding.step3Title") }}
+        </h2>
+        <p class="mx-auto max-w-2xl text-sm leading-7 text-slate-600">
+          {{ t("onboarding.step3Description") }}
+        </p>
+      </div>
     </div>
 
-    <div v-if="templateCatalog.loading.value" class="text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-      <p class="mt-4 text-gray-600">{{ t("common.loading") }}</p>
+    <div v-if="templateCatalog.loading.value" class="rounded-[28px] border border-slate-200 bg-slate-50 px-6 py-16 text-center">
+      <div class="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600"></div>
+      <p class="mt-4 text-sm font-medium text-slate-600">{{ t("common.loading") }}</p>
     </div>
 
-    <div v-else-if="templateCatalog.error.value" class="bg-red-50 text-red-800 px-4 py-3 rounded-lg text-center" data-testid="templates-error">
+    <div
+      v-else-if="templateCatalog.error.value"
+      class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-sm text-rose-700"
+      data-testid="templates-error"
+    >
       {{ templateCatalog.error.value }}
     </div>
 
-    <div v-else>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8" data-testid="template-grid">
-        <template-card
-          v-for="template in featuredTemplates"
-          :key="template.key"
-          :template="template"
-          :selected="template.key === selectedTemplateKey"
-          @click="selectTemplate(template.key)"
-        />
+    <div v-else class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div class="space-y-4">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-2" data-testid="template-grid">
+          <TemplateCard
+            v-for="template in featuredTemplates"
+            :key="template.key"
+            :template="template"
+            :selected="template.key === selectedTemplateKey"
+            @click="selectTemplate(template.key)"
+          />
+        </div>
+
+        <div v-if="error" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {{ error }}
+        </div>
       </div>
 
-      <div v-if="error" class="bg-red-50 text-red-800 px-4 py-3 rounded-lg text-sm mb-6">
-        {{ error }}
-      </div>
-
-      <div class="bg-gray-50 rounded-lg px-4 py-3 mb-6 flex items-center justify-between">
-        <span class="text-gray-700">{{ t("onboarding.templateSelected") }}:</span>
-        <span class="font-semibold text-blue-600" data-testid="selected-template">
+      <aside class="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_24px_48px_rgba(15,23,42,0.04)]">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+          {{ t("onboarding.templateSelected") }}
+        </p>
+        <p class="mt-3 text-2xl font-semibold tracking-tight text-slate-950" data-testid="selected-template">
           {{ selectedTemplateKey || t("common.select") }}
-        </span>
-      </div>
+        </p>
+        <p class="mt-3 text-sm leading-7 text-slate-600">
+          Choose a visual system before you enter the dashboard. You can change it later in the editor.
+        </p>
 
-      <button
-        @click="handleSubmit"
-        :disabled="loading || !selectedTemplateKey"
-        class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
-      >
-        {{ loading ? t("common.loading") : t("onboarding.finish") }}
-      </button>
+        <div class="mt-6 rounded-[24px] border border-blue-100 bg-blue-50/70 p-4">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Ready to publish</p>
+          <p class="mt-2 text-sm leading-7 text-blue-900">
+            The selected template will be used as your default resume workspace theme.
+          </p>
+        </div>
+
+        <button
+          class="mt-6 inline-flex h-12 w-full items-center justify-center rounded-full bg-blue-600 px-6 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="loading || !selectedTemplateKey"
+          @click="handleSubmit"
+        >
+          {{ loading ? t("common.loading") : t("onboarding.finish") }}
+        </button>
+      </aside>
     </div>
   </section>
 </template>

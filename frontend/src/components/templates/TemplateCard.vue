@@ -9,70 +9,61 @@ const props = defineProps({
     default: false,
   },
 });
+
+const previewAlt = (template) => `${template.displayName || template.key} preview`;
 </script>
 
 <template>
   <article
-    class="template-card"
-    :class="{ selected: props.selected }"
+    :class="[
+      'group flex h-full cursor-pointer flex-col overflow-hidden rounded-3xl border bg-white transition-colors duration-200',
+      props.selected
+        ? 'border-[#18181B] bg-[#18181B]/[0.03]'
+        : 'border-gray-200 hover:border-gray-300',
+    ]"
     :data-testid="`template-card-${props.template.key}`"
+    role="button"
+    tabindex="0"
+    @keydown.enter.prevent="$event.currentTarget?.click()"
+    @keydown.space.prevent="$event.currentTarget?.click()"
   >
-    <div class="template-card__preview" v-if="props.template.previewImagePath">
-      <img :src="props.template.previewImagePath" :alt="`${props.template.displayName} preview`" />
+    <div v-if="props.template.previewImagePath" class="border-b border-gray-100 bg-gray-50">
+      <img
+        :src="props.template.previewImagePath"
+        :alt="previewAlt(props.template)"
+        class="aspect-[16/10] w-full object-cover"
+      />
     </div>
-    <div class="template-card__content">
-      <div class="template-card__header">
-        <h3>{{ props.template.displayName || props.template.key }}</h3>
-        <span class="template-card__cost">{{ props.template.creditCost }} credits</span>
+
+    <div class="flex flex-1 flex-col gap-4 p-4 sm:p-5">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <h3 class="truncate text-base font-semibold tracking-tight text-[#09090B]">
+            {{ props.template.displayName || props.template.key }}
+          </h3>
+          <p class="mt-1 text-sm text-gray-500">
+            {{ props.template.description || "No description provided yet." }}
+          </p>
+        </div>
+
+        <span
+          class="shrink-0 rounded-full border border-[#18181B]/10 px-3 py-1 text-xs font-semibold text-[#18181B]"
+        >
+          {{ props.template.creditCost }} credits
+        </span>
       </div>
-      <p class="template-card__description">
-        {{ props.template.description || "No description provided yet." }}
-      </p>
-      <p v-if="props.selected" class="template-card__selected-text">Selected</p>
+
+      <div class="mt-auto flex items-center justify-between gap-3">
+        <span class="text-xs font-medium uppercase tracking-[0.18em] text-gray-400">
+          {{ props.template.key }}
+        </span>
+        <span
+          v-if="props.selected"
+          class="rounded-full bg-[#EC4899]/10 px-3 py-1 text-xs font-semibold text-[#BE185D]"
+        >
+          Selected
+        </span>
+      </div>
     </div>
   </article>
 </template>
-
-<style scoped>
-.template-card {
-  border: 1px solid var(--surface-divider, #cbd5f5);
-  border-radius: 12px;
-  padding: 1rem;
-  background: var(--surface, #ffffff);
-  transition: border 0.2s ease, box-shadow 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-.template-card.selected {
-  border-color: var(--primary, #3b82f6);
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
-}
-.template-card__preview img {
-  width: 100%;
-  border-radius: 10px;
-  object-fit: cover;
-  height: 160px;
-}
-.template-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-}
-.template-card__cost {
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--primary, #3b82f6);
-}
-.template-card__description {
-  line-height: 1.4;
-  color: #475569;
-  font-size: 0.95rem;
-  min-height: 2.65rem;
-}
-.template-card__selected-text {
-  color: #0f766e;
-  font-weight: 600;
-}
-</style>

@@ -17,7 +17,6 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   loading.value = true;
   try {
-    // Save to onboarding draft
     router.push("/onboarding/step3");
   } catch (err) {
     console.error(err);
@@ -32,50 +31,63 @@ const handleSkip = () => {
 </script>
 
 <template>
-  <section data-testid="view-onboarding-step2">
-    <div class="text-center mb-8">
-      <h2 class="text-xl sm:text-2xl font-bold text-gray-900">{{ t("onboarding.step2Title") }}</h2>
-      <p class="text-gray-600 mt-2">{{ t("onboarding.step2Description") }}</p>
+  <section data-testid="view-onboarding-step2" class="mx-auto w-full max-w-3xl space-y-8">
+    <div class="space-y-3 text-center">
+      <span class="inline-flex w-fit items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
+        {{ t("onboarding.step2Title") }}
+      </span>
+      <div class="space-y-2">
+        <h2 class="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+          {{ t("onboarding.step2Title") }}
+        </h2>
+        <p class="mx-auto max-w-2xl text-sm leading-7 text-slate-600">
+          {{ t("onboarding.step2Description") }}
+        </p>
+      </div>
     </div>
 
-    <form @submit="handleSubmit" class="space-y-5">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+    <div class="rounded-[28px] border border-blue-100 bg-blue-50/60 px-5 py-4 text-sm leading-7 text-blue-900">
+      Add a short summary and skills set. You can skip and come back later.
+    </div>
+
+    <form @submit="handleSubmit" class="space-y-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_24px_48px_rgba(15,23,42,0.04)] sm:p-6">
+      <label class="block space-y-2">
+        <span class="text-sm font-semibold text-slate-800">
           {{ t("onboarding.summaryLabel") }}
-        </label>
+        </span>
         <textarea
           v-model="form.summary"
-          rows="4"
+          rows="5"
           :placeholder="t('onboarding.summaryPlaceholder')"
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="min-h-40 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
-      </div>
+      </label>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+      <label class="block space-y-2">
+        <span class="text-sm font-semibold text-slate-800">
           {{ t("onboarding.skillsLabel") }}
-        </label>
+        </span>
         <input
           v-model="form.skills"
           type="text"
           :placeholder="t('onboarding.skillsPlaceholder')"
-          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          class="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10"
         />
-        <p class="text-sm text-gray-500 mt-1">{{ t("common.optional") }}</p>
-      </div>
+        <p class="text-xs font-medium text-slate-500">{{ t("common.optional") }}</p>
+      </label>
 
-      <div class="flex flex-col sm:flex-row gap-3 pt-4">
+      <div class="grid gap-3 pt-2 sm:grid-cols-2">
         <button
           type="button"
           @click="handleSkip"
-          class="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-colors"
+          class="inline-flex h-12 items-center justify-center rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
         >
           {{ t("onboarding.skipStep") }}
         </button>
         <button
           type="submit"
           :disabled="loading"
-          class="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+          class="inline-flex h-12 items-center justify-center rounded-full bg-blue-600 px-5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {{ loading ? t("common.loading") : t("onboarding.continue") }}
         </button>
