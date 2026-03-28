@@ -23,6 +23,7 @@ data class AuthUserDto(
     val locale: String,
     val creditBalance: Int,
     val inviteCode: String,
+    val role: String = "USER",
 )
 
 data class AuthUserResponse(

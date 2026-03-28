@@ -24,7 +24,9 @@
     "required": "必填",
     "optional": "可选",
     "private": "私密",
-    "select": "选择"
+    "select": "选择",
+    "active": "启用",
+    "inactive": "停用"
   },
   "auth": {
     "login": "登录",
@@ -293,5 +295,57 @@
     "settings": "设置",
     "profile": "个人资料",
     "logout": "退出登录"
+  },
+  "admin": {
+    "title": "管理后台",
+    "backToUser": "返回用户视图",
+    "navigation": {
+      "dashboard": "仪表盘",
+      "users": "用户管理",
+      "promocodes": "优惠码",
+      "templates": "模板",
+      "credits": "积分记录"
+    },
+    "dashboard": {
+      "title": "管理仪表盘",
+      "totalUsers": "总用户数",
+      "totalPromoCodes": "总优惠码数",
+      "activeTemplates": "活跃模板",
+      "totalTransactions": "总交易数"
+    },
+    "users": {
+      "title": "用户管理",
+      "search": "搜索用户...",
+      "email": "邮箱",
+      "displayName": "姓名",
+      "role": "角色",
+      "credits": "积分",
+      "actions": "操作"
+    },
+    "promocodes": {
+      "title": "优惠码管理",
+      "create": "创建优惠码",
+      "code": "代码",
+      "reward": "奖励",
+      "maxRedemptions": "最大兑换次数",
+      "redemptions": "已兑换",
+      "isActive": "状态"
+    },
+    "templates": {
+      "title": "模板管理",
+      "displayName": "显示名称",
+      "creditCost": "积分成本",
+      "sortOrder": "排序",
+      "isActive": "启用"
+    },
+    "credits": {
+      "title": "积分交易记录",
+      "transactionId": "ID",
+      "user": "用户",
+      "amount": "金额",
+      "balanceAfter": "交易后余额",
+      "type": "类型",
+      "createdAt": "时间"
+    }
   }
 }

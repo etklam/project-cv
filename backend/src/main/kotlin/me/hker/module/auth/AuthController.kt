@@ -28,7 +28,7 @@ class AuthController(
         response: HttpServletResponse,
     ): R<AuthUserResponse> {
         val user = authService.register(request)
-        authService.writeAuthCookie(response, jwtUtil.generateToken(user.id ?: 1L, user.email))
+        authService.writeAuthCookie(response, jwtUtil.generateToken(user.id ?: 1L, user.email, user.role))
         return R.ok(AuthUserResponse(user = user))
     }
 
@@ -38,7 +38,7 @@ class AuthController(
         response: HttpServletResponse,
     ): R<AuthUserResponse> {
         val user = authService.login(request)
-        authService.writeAuthCookie(response, jwtUtil.generateToken(user.id ?: 1L, user.email))
+        authService.writeAuthCookie(response, jwtUtil.generateToken(user.id ?: 1L, user.email, user.role))
         return R.ok(AuthUserResponse(user = user))
     }
 

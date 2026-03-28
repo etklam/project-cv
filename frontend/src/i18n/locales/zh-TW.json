@@ -24,7 +24,9 @@
     "required": "必填",
     "optional": "選填",
     "private": "私密",
-    "select": "選擇"
+    "select": "選擇",
+    "active": "啟用",
+    "inactive": "停用"
   },
   "auth": {
     "login": "登入",
@@ -293,5 +295,57 @@
     "settings": "設定",
     "profile": "個人資料",
     "logout": "登出"
+  },
+  "admin": {
+    "title": "管理後台",
+    "backToUser": "返回用戶視圖",
+    "navigation": {
+      "dashboard": "儀表板",
+      "users": "用戶管理",
+      "promocodes": "優惠碼",
+      "templates": "範本",
+      "credits": "積分記錄"
+    },
+    "dashboard": {
+      "title": "管理儀表板",
+      "totalUsers": "總用戶數",
+      "totalPromoCodes": "總優惠碼數",
+      "activeTemplates": "啟用範本",
+      "totalTransactions": "總交易數"
+    },
+    "users": {
+      "title": "用戶管理",
+      "search": "搜尋用戶...",
+      "email": "電子郵件",
+      "displayName": "姓名",
+      "role": "角色",
+      "credits": "積分",
+      "actions": "操作"
+    },
+    "promocodes": {
+      "title": "優惠碼管理",
+      "create": "建立優惠碼",
+      "code": "代碼",
+      "reward": "獎勵",
+      "maxRedemptions": "最大兌換次數",
+      "redemptions": "已兌換",
+      "isActive": "狀態"
+    },
+    "templates": {
+      "title": "範本管理",
+      "displayName": "顯示名稱",
+      "creditCost": "積分成本",
+      "sortOrder": "排序",
+      "isActive": "啟用"
+    },
+    "credits": {
+      "title": "積分交易記錄",
+      "transactionId": "ID",
+      "user": "用戶",
+      "amount": "金額",
+      "balanceAfter": "交易後餘額",
+      "type": "類型",
+      "createdAt": "時間"
+    }
   }
 }

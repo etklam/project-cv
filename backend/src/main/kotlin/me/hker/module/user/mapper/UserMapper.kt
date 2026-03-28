@@ -1,6 +1,8 @@
 package me.hker.module.user.mapper
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper
+import com.baomidou.mybatisplus.core.metadata.IPage
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page
 import me.hker.module.user.entity.User
 import org.apache.ibatis.annotations.Mapper
 import org.apache.ibatis.annotations.Param
@@ -57,4 +59,18 @@ interface UserMapper : BaseMapper<User> {
         """,
     )
     fun selectForUpdate(@Param("inviteCode") inviteCode: String): User?
+
+    @Select(
+        """
+        SELECT COUNT(*) FROM users WHERE is_deleted = false
+        """,
+    )
+    fun countTotal(): Long
+
+    @Select(
+        """
+        SELECT COUNT(*) FROM users WHERE is_deleted = false AND role = 'ADMIN'
+        """,
+    )
+    fun countAdmins(): Long
 }

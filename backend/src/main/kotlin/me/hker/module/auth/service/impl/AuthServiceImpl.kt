@@ -74,6 +74,7 @@ class AuthServiceImpl(
         user.creditBalance = appBusinessProperties.credit.signUpBonus
         user.inviteCode = inviteCode
         user.onboardingStatus = "STEP_1"
+        user.role = "USER"
 
         userMapper.insert(user)
 

@@ -11,5 +11,6 @@ fun User.toDto(): AuthUserDto {
         locale = locale,
         creditBalance = creditBalance,
         inviteCode = inviteCode,
+        role = role,
     )
 }

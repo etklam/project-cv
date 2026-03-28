@@ -12,6 +12,14 @@ import Step1BasicInfo from "@/views/onboarding/Step1BasicInfo.vue";
 import Step2ProfessionInfo from "@/views/onboarding/Step2ProfessionInfo.vue";
 import Step3Template from "@/views/onboarding/Step3Template.vue";
 
+// Admin routes (lazy loaded)
+const AdminLayout = () => import("@/layouts/AdminLayout.vue");
+const AdminDashboard = () => import("@/views/admin/AdminDashboard.vue");
+const UserManagement = () => import("@/views/admin/UserManagement.vue");
+const PromoCodeManagement = () => import("@/views/admin/PromoCodeManagement.vue");
+const TemplateManagement = () => import("@/views/admin/TemplateManagement.vue");
+const CreditTransactions = () => import("@/views/admin/CreditTransactions.vue");
+
 export async function routeGuardDecision(to, auth) {
   if (!auth.initialized) {
     await auth.bootstrap();
@@ -20,6 +28,16 @@ export async function routeGuardDecision(to, auth) {
   if (!auth.isLoggedIn) {
     if (to.meta?.requiresAuth) return "/login";
     return true;
+  }
+
+  // Check if admin access is required
+  if (to.meta?.requiresAdmin && auth.user?.role !== "ADMIN") {
+    return "/dashboard";
+  }
+
+  // Redirect admins to admin dashboard if accessing user dashboard
+  if (to.path === "/dashboard" && auth.user?.role === "ADMIN") {
+    return "/admin/dashboard";
   }
 
   if (auth.user?.onboarding_status !== "DONE") {
@@ -61,6 +79,20 @@ const router = createRouter({
         { path: "step1", component: Step1BasicInfo },
         { path: "step2", component: Step2ProfessionInfo },
         { path: "step3", component: Step3Template },
+      ],
+    },
+    // Admin routes
+    {
+      path: "/admin",
+      component: AdminLayout,
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        { path: "", redirect: "/admin/dashboard" },
+        { path: "dashboard", component: AdminDashboard },
+        { path: "users", component: UserManagement },
+        { path: "promocodes", component: PromoCodeManagement },
+        { path: "templates", component: TemplateManagement },
+        { path: "credits", component: CreditTransactions },
       ],
     },
   ],

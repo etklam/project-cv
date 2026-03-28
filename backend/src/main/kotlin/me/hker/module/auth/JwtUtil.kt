@@ -16,13 +16,14 @@ class JwtUtil(
 ) {
     private val key: SecretKey = Keys.hmacShaKeyFor(secret.toByteArray())
 
-    fun generateToken(userId: Long, email: String): String {
+    fun generateToken(userId: Long, email: String, role: String = "USER"): String {
         val now = Date()
         val expiry = Date(now.time + expirationMs)
 
         return Jwts.builder()
             .subject(userId.toString())
             .claim("email", email)
+            .claim("role", role)
             .issuedAt(now)
             .expiration(expiry)
             .signWith(key)
@@ -32,6 +33,11 @@ class JwtUtil(
     fun getUserId(token: String): Long {
         val claims: Claims = parseToken(token)
         return claims.subject.toLong()
+    }
+
+    fun getRole(token: String): String {
+        val claims: Claims = parseToken(token)
+        return claims.get("role", String::class.java) ?: "USER"
     }
 
     fun validateToken(token: String): Boolean = runCatching { parseToken(token) }.isSuccess

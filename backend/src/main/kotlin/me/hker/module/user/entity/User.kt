@@ -15,4 +15,5 @@ class User : BaseEntity() {
     var locale: String = "zh-TW"
     var creditBalance: Int = 0
     var inviteCode: String = ""
+    var role: String = "USER"
 }

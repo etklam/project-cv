@@ -24,7 +24,9 @@
     "required": "Required",
     "optional": "Optional",
     "private": "Private",
-    "select": "Select"
+    "select": "Select",
+    "active": "Active",
+    "inactive": "Inactive"
   },
   "auth": {
     "login": "Log In",
@@ -293,5 +295,57 @@
     "settings": "Settings",
     "profile": "Profile",
     "logout": "Log Out"
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "backToUser": "Back to User View",
+    "navigation": {
+      "dashboard": "Dashboard",
+      "users": "User Management",
+      "promocodes": "Promo Codes",
+      "templates": "Templates",
+      "credits": "Credit Transactions"
+    },
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "totalUsers": "Total Users",
+      "totalPromoCodes": "Total Promo Codes",
+      "activeTemplates": "Active Templates",
+      "totalTransactions": "Total Transactions"
+    },
+    "users": {
+      "title": "User Management",
+      "search": "Search users...",
+      "email": "Email",
+      "displayName": "Name",
+      "role": "Role",
+      "credits": "Credits",
+      "actions": "Actions"
+    },
+    "promocodes": {
+      "title": "Promo Code Management",
+      "create": "Create Promo Code",
+      "code": "Code",
+      "reward": "Reward",
+      "maxRedemptions": "Max Redemptions",
+      "redemptions": "Redemptions",
+      "isActive": "Status"
+    },
+    "templates": {
+      "title": "Template Management",
+      "displayName": "Display Name",
+      "creditCost": "Credit Cost",
+      "sortOrder": "Sort Order",
+      "isActive": "Active"
+    },
+    "credits": {
+      "title": "Credit Transactions",
+      "transactionId": "ID",
+      "user": "User",
+      "amount": "Amount",
+      "balanceAfter": "Balance After",
+      "type": "Type",
+      "createdAt": "Date"
+    }
   }
 }

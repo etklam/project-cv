@@ -26,8 +26,10 @@ class JwtAuthFilter(
             !token.isNullOrBlank() &&
             jwtUtil.validateToken(token)
         ) {
+            val userId = jwtUtil.getUserId(token)
+            val role = jwtUtil.getRole(token)
             val authentication = UsernamePasswordAuthenticationToken.authenticated(
-                AuthenticatedUserPrincipal(jwtUtil.getUserId(token)),
+                AuthenticatedUserPrincipal(userId, role),
                 null,
                 emptyList(),
             )

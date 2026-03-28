@@ -23,6 +23,10 @@ export const useAuthStore = defineStore("auth", {
     initialized: false,
     locale: safeGetLocale() || "zh-TW",
   }),
+  getters: {
+    isAdmin: (state) => state.user?.role === "ADMIN",
+    role: (state) => state.user?.role || "USER",
+  },
   actions: {
     reset() {
       this.user = null;
