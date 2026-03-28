@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 2,
+  "dockerCompose": {
+    "services": {
+      "postgres": {
+        "image": "postgres:16-alpine",
+        "volumes": [
+          {
+            "source": "postgres-data",
+            "target": "/var/lib/postgresql/data",
+            "type": "volume"
+          }
+        ],
+        "environment": {
+          "POSTGRES_DB": "project_cv",
+          "POSTGRES_USER": "postgres",
+          "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD}"
+        },
+        "healthcheck": {
+          "test": ["CMD-SHELL", "pg_isready -U postgres -d project_cv"],
+          "interval": "5s",
+          "timeout": "5s",
+          "retries": 20
+        }
+      },
+      "backend": {
+        "build": {
+          "context": "./backend"
+        },
+        "environment": {
+          "SPRING_DATASOURCE_URL": "jdbc:postgresql://postgres:5432/project_cv",
+          "SPRING_DATASOURCE_USERNAME": "postgres",
+          "SPRING_DATASOURCE_PASSWORD": "${POSTGRES_PASSWORD}",
+          "JWT_SECRET": "${JWT_SECRET}",
+          "APP_UPLOAD_PATH": "/app/data/uploads",
+          "APP_EXPORT_RENDERER_BASE_URL": "http://pdf-renderer:3100",
+          "APP_EXPORT_FRONTEND_BASE_URL": "${APP_BASE_URL}"
+        },
+        "depends_on": {
+          "postgres": {
+            "condition": "service_healthy"
+          }
+        },
+        "healthcheck": {
+          "test": ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health"],
+          "interval": "30s",
+          "timeout": "10s",
+          "retries": 3,
+          "start_period": "60s"
+        },
+        "volumes": [
+          {
+            "source": "backend-data",
+            "target": "/app/data",
+            "type": "volume"
+          }
+        ]
+      },
+      "pdf-renderer": {
+        "build": {
+          "context": "./services/pdf-renderer"
+        },
+        "environment": {
+          "PORT": "3100"
+        },
+        "depends_on": {
+          "backend": {
+            "condition": "service_healthy"
+          }
+        },
+        "healthcheck": {
+          "test": ["CMD", "curl", "-fsS", "http://127.0.0.1:3100/health"],
+          "interval": "30s",
+          "timeout": "5s",
+          "retries": 3,
+          "start_period": "20s"
+        }
+      }
+    },
+    "volumes": {
+      "postgres-data": {},
+      "backend-data": {}
+    }
+  }
+}
