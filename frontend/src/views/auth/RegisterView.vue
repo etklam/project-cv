@@ -162,7 +162,7 @@ const handleSubmit = async (event) => {
           <div class="grid gap-3 sm:grid-cols-3">
             <div class="rounded-[24px] border border-outline-variant/30 bg-white/70 p-4">
               <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">Identity</p>
-              <p class="mt-2 text-sm font-medium text-on-surface">Public profile and username setup</p>
+              <p class="mt-2 text-sm font-medium text-on-surface">Account email and CV display name setup</p>
             </div>
             <div class="rounded-[24px] border border-outline-variant/30 bg-white/70 p-4">
               <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">Direction</p>

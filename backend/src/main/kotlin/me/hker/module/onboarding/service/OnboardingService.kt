@@ -12,5 +12,4 @@ interface OnboardingService {
     fun submitStep2(userId: Long, request: OnboardingStep2Request): AuthUserDto
     fun skipStep2(userId: Long): AuthUserDto
     fun submitStep3(userId: Long, request: OnboardingStep3Request): AuthUserDto
-    fun isUsernameAvailable(username: String, currentUserId: Long? = null): Boolean
 }

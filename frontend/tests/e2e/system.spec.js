@@ -6,7 +6,6 @@ function uniqueIdentity() {
     email: `e2e-${stamp}@example.com`,
     password: "Password123!",
     displayName: `E2E ${stamp.slice(-6)}`,
-    username: `e2e${stamp.replace(/[^a-z0-9]/gi, "").toLowerCase()}`.slice(0, 20),
   };
 }
 
@@ -27,8 +26,6 @@ async function registerFreshUser(page, identity) {
 
 async function completeOnboarding(page, identity) {
   const step1 = page.getByTestId("view-onboarding-step1");
-  const step1Inputs = step1.locator("input");
-  await step1Inputs.nth(1).fill(identity.username);
   await step1.locator("button[type='submit']").click();
 
   await expect(page).toHaveURL(/\/onboarding\/step2$/);

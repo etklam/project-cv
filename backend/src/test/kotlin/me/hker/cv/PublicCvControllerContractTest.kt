@@ -34,10 +34,10 @@ class PublicCvControllerContractTest(
 
     @Test
     fun `public profile endpoint returns typed payload`() {
-        whenever(publicCvService.getPublicProfile("alice")).thenReturn(
+        whenever(publicCvService.getPublicProfile("alice@example.com")).thenReturn(
             PublicProfileResponse(
                 user = PublicProfileUserDto(
-                    username = "alice",
+                    email = "alice@example.com",
                     displayName = "Alice",
                     avatarPath = "/uploads/alice.png",
                 ),
@@ -53,11 +53,11 @@ class PublicCvControllerContractTest(
             ),
         )
 
-        mockMvc.get("/api/v1/public/alice")
+        mockMvc.get("/api/v1/public/alice@example.com")
             .andExpect {
                 status { isOk() }
                 jsonPath("$.code") { value(0) }
-                jsonPath("$.data.user.username") { value("alice") }
+                jsonPath("$.data.user.email") { value("alice@example.com") }
                 jsonPath("$.data.cvs[0].slug") { value("product-resume") }
                 jsonPath("$.data.cvs[0].templateKey") { value("minimal") }
             }
@@ -65,10 +65,10 @@ class PublicCvControllerContractTest(
 
     @Test
     fun `public cv endpoint returns cv with sections`() {
-        whenever(publicCvService.getPublicCv("alice", "product-resume")).thenReturn(
+        whenever(publicCvService.getPublicCv("alice@example.com", "product-resume")).thenReturn(
             PublicCvDetailResponse(
                 user = PublicProfileUserDto(
-                    username = "alice",
+                    email = "alice@example.com",
                     displayName = "Alice",
                     avatarPath = null,
                 ),
@@ -94,7 +94,7 @@ class PublicCvControllerContractTest(
             ),
         )
 
-        mockMvc.get("/api/v1/public/alice/product-resume")
+        mockMvc.get("/api/v1/public/alice@example.com/product-resume")
             .andExpect {
                 status { isOk() }
                 jsonPath("$.code") { value(0) }

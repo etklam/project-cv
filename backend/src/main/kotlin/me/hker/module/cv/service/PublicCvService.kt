@@ -4,6 +4,6 @@ import me.hker.module.cv.dto.PublicCvDetailResponse
 import me.hker.module.cv.dto.PublicProfileResponse
 
 interface PublicCvService {
-    fun getPublicProfile(username: String): PublicProfileResponse
-    fun getPublicCv(username: String, slug: String): PublicCvDetailResponse
+    fun getPublicProfile(email: String): PublicProfileResponse
+    fun getPublicCv(email: String, slug: String): PublicCvDetailResponse
 }

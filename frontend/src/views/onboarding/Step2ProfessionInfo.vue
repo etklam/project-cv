@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth";
@@ -17,6 +17,72 @@ const form = ref({
 });
 
 const loading = ref(false);
+const experienceProfiles = {
+  "0-2 Years (Entry)": {
+    badge: "Early career",
+    headline: "Tell us what role you want to break into.",
+    description:
+      "For early-career candidates we focus on direction, momentum, and signals of learning speed rather than pure years shipped.",
+    targetLabel: "What role are you trying to land first?",
+    targetPlaceholder: "e.g. Junior Frontend Developer",
+    leadershipLabel: "How do you want to contribute right now?",
+    managerTitle: "Project ownership",
+    managerDescription: "Own a stream, drive coordination, or take visible initiative.",
+    individualTitle: "Hands-on execution",
+    individualDescription: "Build craft depth and show strong delivery fundamentals.",
+    why:
+      "We bias the resume toward learning velocity, internships, side projects, and proof of initiative.",
+  },
+  "3-5 Years (Mid)": {
+    badge: "Growth mode",
+    headline: "Tell us where your next role should move you.",
+    description:
+      "For mid-level candidates we look for progression, sharper positioning, and evidence that your scope is expanding.",
+    targetLabel: "What role are you growing into next?",
+    targetPlaceholder: "e.g. Staff Product Designer",
+    leadershipLabel: "Which scope best matches your current work?",
+    managerTitle: "Team or stream lead",
+    managerDescription: "Leading projects, mentoring peers, or owning cross-functional outcomes.",
+    individualTitle: "Senior individual contributor",
+    individualDescription: "Driving execution depth and shipping independently across ambiguous work.",
+    why:
+      "We tune the draft to highlight trajectory, sharper ownership, and the jump from execution to influence.",
+  },
+  "6-10 Years (Senior)": {
+    badge: "Senior operator",
+    headline: "Tell us what level of scope this resume should signal.",
+    description:
+      "Senior candidates need stronger framing around ownership, business impact, and the size of problems they can carry.",
+    targetLabel: "What title or charter should this resume support?",
+    targetPlaceholder: "e.g. Senior Engineering Manager",
+    leadershipLabel: "What kind of leadership are you exercising today?",
+    managerTitle: "People and strategy leader",
+    managerDescription: "Managing managers, shaping roadmaps, or directing multi-team execution.",
+    individualTitle: "Principal-level specialist",
+    individualDescription: "Leading through technical judgment, architecture, and high-leverage delivery.",
+    why:
+      "We increase density around decisions, influence, and measurable outcomes instead of generic task lists.",
+  },
+  "10+ Years (Expert)": {
+    badge: "Executive track",
+    headline: "Tell us what mandate this resume needs to communicate.",
+    description:
+      "Experienced leaders need fewer generic details and stronger signaling around scale, transformation, and executive trust.",
+    targetLabel: "What mandate, title, or portfolio are you targeting?",
+    targetPlaceholder: "e.g. VP Product or Head of Design",
+    leadershipLabel: "Which leadership lens should shape the story?",
+    managerTitle: "Org leadership",
+    managerDescription: "Owning vision, organizational design, and company-level priorities.",
+    individualTitle: "Strategic expert",
+    individualDescription: "Operating as a top specialist with outsized influence across teams or business units.",
+    why:
+      "We bias toward scale, transformation, and senior decision-making rather than day-to-day execution detail.",
+  },
+};
+
+const currentProfile = computed(
+  () => experienceProfiles[form.value.years] || experienceProfiles["3-5 Years (Mid)"],
+);
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -47,18 +113,20 @@ const handleSkip = async () => {
           {{ t("onboarding.progress", { current: 2, total: 3 }) }}
         </span>
         <h2 class="mt-4 font-headline text-3xl font-extrabold tracking-tight text-on-surface sm:text-4xl">
-          Tell us where you are now.
+          {{ currentProfile.headline }}
         </h2>
         <p class="mt-3 max-w-3xl text-sm leading-7 text-on-surface-variant">
-          We use these signals to calibrate the editor workspace, the density of recommendations, and the tone of your first resume draft.
+          {{ currentProfile.description }}
         </p>
       </div>
 
       <div class="rounded-[30px] border border-outline-variant/30 bg-surface-container-lowest px-5 py-5 shadow-sm">
         <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">Calibration</p>
-        <p class="mt-3 text-2xl font-extrabold tracking-tight text-on-surface">AI ready</p>
+        <p class="mt-3 text-2xl font-extrabold tracking-tight text-on-surface" data-testid="onboarding-experience-badge">
+          {{ currentProfile.badge }}
+        </p>
         <p class="mt-2 text-sm leading-7 text-on-surface-variant">
-          Seniority and role context shape your later suggestions and template recommendations.
+          Questions adapt to your experience level so the resume starts from the right narrative.
         </p>
       </div>
     </div>
@@ -103,19 +171,21 @@ const handleSkip = async () => {
         </div>
 
         <label class="mt-8 block space-y-2">
-          <span class="ml-1 text-xs font-bold uppercase tracking-[0.22em] text-on-surface-variant">Target Job Title</span>
+          <span class="ml-1 text-xs font-bold uppercase tracking-[0.22em] text-on-surface-variant" data-testid="onboarding-target-label">
+            {{ currentProfile.targetLabel }}
+          </span>
           <input
             v-model="form.targetTitle"
             data-testid="onboarding-target-title"
             type="text"
-            placeholder="e.g. Senior Product Designer"
+            :placeholder="currentProfile.targetPlaceholder"
             class="h-14 w-full rounded-[24px] border border-outline-variant/40 bg-surface-container-low px-4 text-sm font-medium text-on-surface placeholder:text-outline transition focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10"
           />
         </label>
 
         <div class="mt-8 space-y-4">
-          <p class="ml-1 text-xs font-bold uppercase tracking-[0.22em] text-on-surface-variant">
-            Are you currently leading a team?
+          <p class="ml-1 text-xs font-bold uppercase tracking-[0.22em] text-on-surface-variant" data-testid="onboarding-leadership-label">
+            {{ currentProfile.leadershipLabel }}
           </p>
           <div class="grid gap-4 md:grid-cols-2">
             <label
@@ -131,8 +201,8 @@ const handleSkip = async () => {
                 type="radio"
               />
               <div>
-                <span class="block font-bold text-on-surface group-hover:text-primary">Yes, I'm a Manager</span>
-                <span class="text-xs text-on-surface-variant">Leading people or strategy</span>
+                <span class="block font-bold text-on-surface group-hover:text-primary">{{ currentProfile.managerTitle }}</span>
+                <span class="text-xs text-on-surface-variant">{{ currentProfile.managerDescription }}</span>
               </div>
             </label>
 
@@ -149,8 +219,8 @@ const handleSkip = async () => {
                 type="radio"
               />
               <div>
-                <span class="block font-bold text-on-surface group-hover:text-primary">Individual Contributor</span>
-                <span class="text-xs text-on-surface-variant">Specializing in execution</span>
+                <span class="block font-bold text-on-surface group-hover:text-primary">{{ currentProfile.individualTitle }}</span>
+                <span class="text-xs text-on-surface-variant">{{ currentProfile.individualDescription }}</span>
               </div>
             </label>
           </div>
@@ -161,8 +231,8 @@ const handleSkip = async () => {
         <div class="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-primary-container to-primary p-8 md:col-span-3">
           <div class="relative z-10 max-w-md space-y-3">
             <h3 class="font-headline text-2xl font-extrabold tracking-tight text-white">Why this matters?</h3>
-            <p class="text-sm leading-7 text-on-primary-container">
-              Our editorial engine uses your seniority and scope to tune document density so experienced operators read as authoritative and early-career candidates read as high-potential.
+            <p class="text-sm leading-7 text-on-primary-container" data-testid="onboarding-why-copy">
+              {{ currentProfile.why }}
             </p>
           </div>
           <div class="absolute -bottom-5 -right-5 opacity-20">
@@ -178,7 +248,7 @@ const handleSkip = async () => {
           />
           <div class="absolute inset-x-0 bottom-0 p-6">
             <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">Context matters</p>
-            <p class="mt-2 text-sm font-semibold text-on-surface">Your role framing influences recommendations later in the workflow.</p>
+            <p class="mt-2 text-sm font-semibold text-on-surface">The system changes the questions as your career stage changes.</p>
           </div>
         </div>
       </div>

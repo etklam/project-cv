@@ -1,7 +1,7 @@
 import client, { unwrap } from "@/api/client";
 
-export const getPublicProfile = async (username) =>
-  unwrap(await client.get(`/public/${encodeURIComponent(username)}`));
+export const getPublicProfile = async (email) =>
+  unwrap(await client.get(`/public/${encodeURIComponent(email)}`));
 
-export const getPublicCv = async (username, slug) =>
-  unwrap(await client.get(`/public/${encodeURIComponent(username)}/${encodeURIComponent(slug)}`));
+export const getPublicCv = async (email, slug) =>
+  unwrap(await client.get(`/public/${encodeURIComponent(email)}/${encodeURIComponent(slug)}`));

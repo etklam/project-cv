@@ -14,14 +14,14 @@ import org.springframework.web.bind.annotation.RestController
 class PublicCvController(
     private val publicCvService: PublicCvService,
 ) {
-    @GetMapping("/{username}")
+    @GetMapping("/{email}")
     fun publicProfile(
-        @PathVariable username: String,
-    ): R<PublicProfileResponse> = R.ok(publicCvService.getPublicProfile(username))
+        @PathVariable email: String,
+    ): R<PublicProfileResponse> = R.ok(publicCvService.getPublicProfile(email))
 
-    @GetMapping("/{username}/{slug}")
+    @GetMapping("/{email}/{slug}")
     fun publicCv(
-        @PathVariable username: String,
+        @PathVariable email: String,
         @PathVariable slug: String,
-    ): R<PublicCvDetailResponse> = R.ok(publicCvService.getPublicCv(username, slug))
+    ): R<PublicCvDetailResponse> = R.ok(publicCvService.getPublicCv(email, slug))
 }

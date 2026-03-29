@@ -4,7 +4,6 @@ import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth";
 import { submitStep1 } from "@/api/onboarding";
-import { checkUsername } from "@/api/user";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -12,36 +11,9 @@ const auth = useAuthStore();
 
 const form = ref({
   displayName: auth.user?.displayName || "",
-  username: "",
 });
 const error = ref("");
-const usernameChecking = ref(false);
-const usernameAvailable = ref(null);
 const loading = ref(false);
-
-const checkUsernameAvailability = async () => {
-  const username = form.value.username.trim();
-  if (!username || username.length < 3) {
-    usernameAvailable.value = null;
-    return;
-  }
-
-  usernameChecking.value = true;
-  try {
-    const result = await checkUsername(username);
-    usernameAvailable.value = result.available;
-  } catch {
-    usernameAvailable.value = false;
-  } finally {
-    usernameChecking.value = false;
-  }
-};
-
-let debounceTimer;
-const debouncedCheck = () => {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(checkUsernameAvailability, 500);
-};
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -52,16 +24,10 @@ const handleSubmit = async (e) => {
     return;
   }
 
-  if (!form.value.username.trim() || usernameAvailable.value === false) {
-    error.value = t("onboarding.usernameTaken");
-    return;
-  }
-
   loading.value = true;
   try {
     const data = await submitStep1({
       displayName: form.value.displayName.trim(),
-      username: form.value.username.trim(),
     });
     auth.applyUser(data.user);
     router.push("/onboarding/step2");
@@ -73,8 +39,8 @@ const handleSubmit = async (e) => {
 };
 
 const handleSkip = async () => {
-  if (!form.value.username.trim()) {
-    error.value = t("onboarding.usernameTaken");
+  if (!form.value.displayName.trim()) {
+    error.value = t("validation.required");
     return;
   }
   router.push("/onboarding/step2");
@@ -89,18 +55,18 @@ const handleSkip = async () => {
           {{ t("onboarding.step1Title") }}
         </span>
         <h2 class="mt-4 font-headline text-3xl font-extrabold tracking-tight text-on-surface sm:text-4xl">
-          Set your public identity.
+          Set the name shown on your CV.
         </h2>
         <p class="mt-3 max-w-2xl text-sm leading-7 text-on-surface-variant">
-          Start with the signals people see first. We check username availability while you type so the path to publishing stays clear.
+          Your account email already identifies the owner. Here you only decide how the document should introduce you.
         </p>
       </div>
 
       <div class="rounded-[30px] border border-outline-variant/40 bg-surface-container-lowest px-5 py-5 shadow-sm">
-        <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">Live checks</p>
+        <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-on-surface-variant">Identity</p>
         <p class="mt-3 text-2xl font-extrabold tracking-tight text-on-surface">01</p>
         <p class="mt-2 text-sm leading-7 text-on-surface-variant">
-          Username validation runs in the background and keeps your public route usable.
+          Sign-in stays on email. Public CV presentation stays on your display name.
         </p>
       </div>
     </div>
@@ -121,40 +87,15 @@ const handleSkip = async () => {
 
       <label class="block space-y-2">
         <span class="text-xs font-bold uppercase tracking-[0.22em] text-on-surface-variant">
-          {{ t("onboarding.usernameLabel") }}
-          <span class="text-primary">*</span>
+          Account email
         </span>
-        <div class="relative">
-          <input
-            v-model="form.username"
-            type="text"
-            required
-            minlength="3"
-            :placeholder="t('onboarding.usernamePlaceholder')"
-            class="h-14 w-full rounded-[24px] border border-outline-variant/40 bg-surface-container-low px-4 pr-32 text-on-surface placeholder:text-outline transition focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10"
-            :class="usernameAvailable === false ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-500/10' : usernameAvailable === true ? 'border-emerald-300 focus:border-emerald-400 focus:ring-emerald-500/10' : ''"
-            @input="debouncedCheck"
-          />
-          <div class="absolute inset-y-0 right-4 flex items-center">
-            <span v-if="usernameChecking" class="text-xs font-medium text-slate-500">
-              {{ t("onboarding.usernameChecking") }}
-            </span>
-            <span v-else-if="usernameAvailable === true" class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-              {{ t("onboarding.usernameAvailable") }}
-            </span>
-            <span v-else-if="usernameAvailable === false" class="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
-              {{ t("onboarding.usernameTaken") }}
-            </span>
-          </div>
-        </div>
+        <input
+          :value="auth.user?.email || ''"
+          type="email"
+          disabled
+          class="h-14 w-full rounded-[24px] border border-outline-variant/40 bg-slate-100 px-4 text-slate-500"
+        />
       </label>
-
-      <p v-if="usernameAvailable === true" class="text-sm font-medium text-emerald-700">
-        {{ t("onboarding.usernameAvailable") }}
-      </p>
-      <p v-if="usernameAvailable === false" class="text-sm font-medium text-rose-700">
-        {{ t("onboarding.usernameTaken") }}
-      </p>
 
       <p v-if="error" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
         {{ error }}
@@ -170,7 +111,7 @@ const handleSkip = async () => {
         </button>
         <button
           type="submit"
-          :disabled="loading || usernameAvailable === false"
+          :disabled="loading"
           class="inline-flex h-12 items-center justify-center rounded-[18px] bg-gradient-to-br from-primary to-primary-container px-6 text-sm font-semibold text-on-primary shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
         >
           {{ loading ? t("common.loading") : t("onboarding.continue") }}

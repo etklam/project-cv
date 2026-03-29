@@ -9,7 +9,6 @@ data class OnboardingStatusResponse(
 
 data class OnboardingStep1Request(
     val displayName: String,
-    val username: String,
 )
 
 data class OnboardingStep2Request(
@@ -21,8 +20,4 @@ data class OnboardingStep2Request(
 
 data class OnboardingStep3Request(
     val templateKey: String,
-)
-
-data class UsernameAvailabilityResponse(
-    val available: Boolean,
 )

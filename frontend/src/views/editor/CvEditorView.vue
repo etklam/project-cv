@@ -73,8 +73,8 @@ const activeCv = computed(() => buildPreviewCv(editorDraft.value, cvStore.curren
 const previewSections = computed(() => buildSectionsPayload(editorDraft.value).sections);
 const publicPath = computed(() => {
   if (activeCv.value?.isPublic && activeCv.value?.slug) {
-    const username = cvStore.currentCv?.username || "{username}";
-    return `/u/${username}/${activeCv.value.slug}`;
+    const email = cvStore.currentCv?.email || "{email}";
+    return `/u/${email}/${activeCv.value.slug}`;
   }
   return "";
 });

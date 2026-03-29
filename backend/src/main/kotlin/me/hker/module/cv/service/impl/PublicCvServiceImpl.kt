@@ -25,8 +25,8 @@ class PublicCvServiceImpl(
     private val cvSectionMapper: CvSectionMapper,
     private val objectMapper: ObjectMapper,
 ) : PublicCvService {
-    override fun getPublicProfile(username: String): PublicProfileResponse {
-        val user = requirePublicUser(username)
+    override fun getPublicProfile(email: String): PublicProfileResponse {
+        val user = requirePublicUser(email)
         val userId = user.id ?: throw ResourceNotFoundException("public user not found")
         val publicCvs = cvMapper.selectList(
             QueryWrapper<Cv>()
@@ -51,8 +51,8 @@ class PublicCvServiceImpl(
         )
     }
 
-    override fun getPublicCv(username: String, slug: String): PublicCvDetailResponse {
-        val user = requirePublicUser(username)
+    override fun getPublicCv(email: String, slug: String): PublicCvDetailResponse {
+        val user = requirePublicUser(email)
         val userId = user.id ?: throw ResourceNotFoundException("public user not found")
         val cv = cvMapper.selectOne(
             QueryWrapper<Cv>()
@@ -90,12 +90,12 @@ class PublicCvServiceImpl(
         )
     }
 
-    private fun requirePublicUser(username: String): User =
-        userService.findByUsername(username)
+    private fun requirePublicUser(email: String): User =
+        userService.findByEmail(email)
             ?: throw ResourceNotFoundException("public user not found")
 
     private fun User.toPublicProfileUserDto() = PublicProfileUserDto(
-        username = username ?: throw ResourceNotFoundException("public user not found"),
+        email = email,
         displayName = displayName,
         avatarPath = avatarPath,
     )

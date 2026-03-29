@@ -38,17 +38,17 @@ class PublicCvPostgresIntegrationTest : PostgresIntegrationTestSupport() {
             "Fresh databases should bootstrap from the baseline and still apply later migrations",
         )
 
-        mockMvc.get("/api/v1/public/alice")
+        mockMvc.get("/api/v1/public/alice@example.com")
             .andExpect {
                 status { isOk() }
-                jsonPath("$.data.user.username") { value("alice") }
+                jsonPath("$.data.user.email") { value("alice@example.com") }
                 jsonPath("$.data.cvs[0].slug") { value("product-resume") }
             }
     }
 
     @Test
     fun `fresh postgres database should expose seeded public cv detail sections`() {
-        mockMvc.get("/api/v1/public/alice/product-resume")
+        mockMvc.get("/api/v1/public/alice@example.com/product-resume")
             .andExpect {
                 status { isOk() }
                 jsonPath("$.data.cv.templateKey") { value("minimal") }

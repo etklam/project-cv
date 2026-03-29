@@ -31,8 +31,8 @@ class PublicCvServiceTest {
 
     @Test
     fun `get public profile returns only public cv summaries`() {
-        whenever(userService.findByUsername("alice")).thenReturn(
-            user(id = 1L, username = "alice", displayName = "Alice"),
+        whenever(userService.findByEmail("alice@example.com")).thenReturn(
+            user(id = 1L, email = "alice@example.com", displayName = "Alice"),
         )
         whenever(cvMapper.selectList(any<QueryWrapper<Cv>>())).thenReturn(
             listOf(
@@ -45,9 +45,9 @@ class PublicCvServiceTest {
             ),
         )
 
-        val profile = service.getPublicProfile("alice")
+        val profile = service.getPublicProfile("alice@example.com")
 
-        assertEquals("alice", profile.user.username)
+        assertEquals("alice@example.com", profile.user.email)
         assertEquals("Alice", profile.user.displayName)
         assertEquals(1, profile.cvs.size)
         assertEquals("product-resume", profile.cvs.first().slug)
@@ -56,8 +56,8 @@ class PublicCvServiceTest {
 
     @Test
     fun `get public cv returns typed sections with parsed json content`() {
-        whenever(userService.findByUsername("alice")).thenReturn(
-            user(id = 1L, username = "alice", displayName = "Alice"),
+        whenever(userService.findByEmail("alice@example.com")).thenReturn(
+            user(id = 1L, email = "alice@example.com", displayName = "Alice"),
         )
         whenever(cvMapper.selectOne(any<QueryWrapper<Cv>>())).thenReturn(
             cv(
@@ -80,9 +80,9 @@ class PublicCvServiceTest {
             ),
         )
 
-        val detail = service.getPublicCv("alice", "product-resume")
+        val detail = service.getPublicCv("alice@example.com", "product-resume")
 
-        assertEquals("alice", detail.user.username)
+        assertEquals("alice@example.com", detail.user.email)
         assertEquals("modern", detail.cv.templateKey)
         assertEquals(1, detail.sections.size)
         assertEquals("summary", detail.sections.first().sectionType)
@@ -90,11 +90,11 @@ class PublicCvServiceTest {
     }
 
     @Test
-    fun `get public cv throws not found when username is unknown`() {
-        whenever(userService.findByUsername("ghost")).thenReturn(null)
+    fun `get public cv throws not found when email is unknown`() {
+        whenever(userService.findByEmail("ghost@example.com")).thenReturn(null)
 
         val error = assertThrows(ResourceNotFoundException::class.java) {
-            service.getPublicCv("ghost", "missing")
+            service.getPublicCv("ghost@example.com", "missing")
         }
 
         assertEquals("public user not found", error.message)
@@ -102,14 +102,13 @@ class PublicCvServiceTest {
 
     private fun user(
         id: Long,
-        username: String,
+        email: String,
         displayName: String,
     ) = User().apply {
         this.id = id
-        this.username = username
         this.displayName = displayName
-        email = "$username@example.com"
-        inviteCode = "INV-${username.uppercase()}"
+        this.email = email
+        inviteCode = "INV-ALICE"
     }
 
     private fun cv(

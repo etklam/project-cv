@@ -6,7 +6,7 @@ import { getPublicProfile } from "@/api/public";
 
 const { t } = useI18n();
 const route = useRoute();
-const username = route?.params?.username || "";
+const email = route?.params?.email || "";
 
 const loading = ref(true);
 const error = ref("");
@@ -15,7 +15,7 @@ const cvs = ref([]);
 
 onMounted(async () => {
   try {
-    const result = await getPublicProfile(username);
+    const result = await getPublicProfile(email);
     user.value = result.user || null;
     cvs.value = result.cvs || [];
   } catch (requestError) {
@@ -50,10 +50,10 @@ onMounted(async () => {
           </span>
           <div class="space-y-2">
             <h1 class="text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl" data-testid="public-profile-name">
-              {{ user?.displayName || user?.username || username }}
+              {{ user?.displayName || email }}
             </h1>
-            <p class="text-sm leading-7 text-slate-600" data-testid="public-profile-username">
-              @{{ user?.username || username }}
+            <p class="text-sm leading-7 text-slate-600" data-testid="public-profile-email">
+              {{ user?.email || email }}
             </p>
           </div>
         </div>
@@ -65,7 +65,7 @@ onMounted(async () => {
           </div>
           <div class="rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Profile route</p>
-            <strong class="mt-2 block truncate text-sm font-semibold text-slate-900">/u/{{ user?.username || username }}</strong>
+            <strong class="mt-2 block truncate text-sm font-semibold text-slate-900">/u/{{ user?.email || email }}</strong>
           </div>
         </div>
       </header>
@@ -93,7 +93,7 @@ onMounted(async () => {
               class="rounded-3xl border border-slate-200 bg-slate-50 transition hover:border-blue-200 hover:bg-blue-50/40"
             >
               <RouterLink
-                :to="`/u/${user?.username || username}/${cv.slug}`"
+                :to="`/u/${user?.email || email}/${cv.slug}`"
                 class="flex items-center justify-between gap-4 px-5 py-5"
                 data-testid="public-cv-link"
               >
@@ -135,7 +135,7 @@ onMounted(async () => {
           <div class="rounded-[28px] border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_24px_48px_rgba(15,23,42,0.08)]">
             <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-200">Public route</p>
             <p class="mt-3 text-sm leading-7 text-white/75">
-              /u/{{ user?.username || username }}
+              /u/{{ user?.email || email }}
             </p>
           </div>
         </aside>

@@ -133,7 +133,7 @@ const i18n = createI18n({
         slug: "URL Slug",
         slugPlaceholder: "url-friendly-slug",
         slugDescription: "Custom URL for public CV",
-        slugHint: "Public path: /u/{username}/{slug}",
+        slugHint: "Public path: /u/{email}/{slug}",
         saveMetadata: "Save Details",
         saving: "Saving...",
         saved: "Saved successfully",
@@ -279,7 +279,7 @@ const i18n = createI18n({
         notFound: "Page not found",
         backToProfile: "Back to Profile",
         shareLink: "Share this CV",
-        cvOwner: "@{username}",
+        cvOwner: "{email}",
       },
       errors: {
         general: "Something went wrong. Please try again.",

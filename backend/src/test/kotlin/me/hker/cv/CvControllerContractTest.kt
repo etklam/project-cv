@@ -218,7 +218,7 @@ class CvControllerContractTest(
             templateKey = "minimal",
             isPublic = isPublic,
             slug = slug,
-            username = "alice",
+            email = "alice@example.com",
             updatedAt = LocalDateTime.of(2026, 3, 28, 10, 0),
         ),
         sections = listOf(

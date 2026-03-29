@@ -171,7 +171,7 @@ describe("CvEditorView", () => {
         templateKey: "modern",
         isPublic: true,
         slug: "my-cv-2026",
-        username: "ada",
+        email: "ada@example.com",
       },
       sections: [],
     });
@@ -221,7 +221,7 @@ describe("CvEditorView", () => {
         templateKey: "modern",
         isPublic: true,
         slug: "my-cv-2026",
-        username: "ada",
+        email: "ada@example.com",
       },
       sections: [],
     });

@@ -7,7 +7,7 @@ import { getPublicCv } from "@/api/public";
 
 const { t } = useI18n();
 const route = useRoute();
-const username = route?.params?.username || "";
+const email = route?.params?.email || "";
 const slug = route?.params?.slug || "";
 
 const loading = ref(true);
@@ -18,7 +18,7 @@ const sections = ref([]);
 
 onMounted(async () => {
   try {
-    const result = await getPublicCv(username, slug);
+    const result = await getPublicCv(email, slug);
     user.value = result.user || null;
     cv.value = result.cv || null;
     sections.value = result.sections || [];
@@ -57,7 +57,7 @@ onMounted(async () => {
               {{ cv.title || slug }}
             </h1>
             <p class="text-sm leading-7 text-slate-600" data-testid="public-cv-owner">
-              @{{ user?.username || username }}
+              {{ user?.displayName || user?.email || email }}
             </p>
           </div>
         </div>
@@ -69,7 +69,7 @@ onMounted(async () => {
           </div>
           <div class="rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Route</p>
-            <strong class="mt-2 block truncate text-sm font-semibold text-slate-900">/u/{{ user?.username || username }}/{{ slug }}</strong>
+            <strong class="mt-2 block truncate text-sm font-semibold text-slate-900">/u/{{ user?.email || email }}/{{ slug }}</strong>
           </div>
         </div>
       </header>
@@ -95,7 +95,7 @@ onMounted(async () => {
           <div class="rounded-[28px] border border-slate-200 bg-slate-950 p-5 text-white shadow-[0_24px_48px_rgba(15,23,42,0.08)]">
             <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-200">Owner</p>
             <p class="mt-3 text-sm leading-7 text-white/75">
-              @{{ user?.username || username }}
+              {{ user?.email || email }}
             </p>
           </div>
         </aside>

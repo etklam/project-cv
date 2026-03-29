@@ -184,7 +184,8 @@ class CvServiceImpl(
 
     private fun buildCvDetail(cv: Cv): CvDetailResponse {
         val cvId = cv.id ?: throw ResourceNotFoundException("cv not found")
-        val username = userService.findById(cv.userId ?: 0L)?.username
+        val owner = userService.findById(cv.userId ?: 0L)
+            ?: throw ResourceNotFoundException("cv owner not found")
         val sections = cvSectionMapper.selectList(
             QueryWrapper<CvSection>()
                 .eq("cv_id", cvId)
@@ -199,7 +200,7 @@ class CvServiceImpl(
                 templateKey = cv.templateKey,
                 isPublic = cv.isPublic,
                 slug = cv.slug,
-                username = username,
+                email = owner.email,
                 updatedAt = cv.updatedAt,
             ),
             sections = sections.map { section ->

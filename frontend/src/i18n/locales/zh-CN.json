@@ -132,7 +132,7 @@
     "slug": "网址标识",
     "slugPlaceholder": "url-friendly-slug",
     "slugDescription": "公开简历的自定义网址",
-    "slugHint": "公开路径：/u/{username}/{slug}",
+    "slugHint": "公开路径：/u/{email}/{slug}",
     "saveMetadata": "保存详情",
     "saving": "保存中...",
     "saved": "保存成功",
@@ -274,7 +274,7 @@
     "notFound": "页面未找到",
     "backToProfile": "返回个人资料",
     "shareLink": "分享此简历",
-    "cvOwner": " @{username}"
+    "cvOwner": " {email}"
   },
   "errors": {
     "general": "出错了，请重试。",

@@ -89,7 +89,7 @@ class PdfExportServiceTest {
             templateKey = "minimal",
             isPublic = false,
             slug = null,
-            username = "alice",
+            email = "alice@example.com",
             updatedAt = LocalDateTime.of(2026, 3, 28, 12, 0),
         ),
         sections = emptyList(),

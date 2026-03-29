@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import PublicCvView from "@/views/public/PublicCvView.vue";
 import { getPublicCv } from "@/api/public";
 
-const routeParams = { username: "alice", slug: "backend-cv" };
+const routeParams = { email: "alice@example.com", slug: "backend-cv" };
 
 vi.mock("vue-router", () => ({
   useRoute: () => ({ params: routeParams }),
@@ -25,13 +25,13 @@ vi.mock("@/components/cv-templates/CvTemplateRenderer.vue", () => ({
 describe("PublicCvView", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    routeParams.username = "alice";
+    routeParams.email = "alice@example.com";
     routeParams.slug = "backend-cv";
   });
 
   it("loads public CV and passes payload into template renderer", async () => {
     vi.mocked(getPublicCv).mockResolvedValue({
-      user: { username: "alice", displayName: "Alice" },
+      user: { email: "alice@example.com", displayName: "Alice" },
       cv: { id: 11, title: "Backend CV", slug: "backend-cv", templateKey: "modern" },
       sections: [{ id: 1, sectionType: "summary", content: { text: "Hello" } }],
     });
@@ -39,7 +39,7 @@ describe("PublicCvView", () => {
     const wrapper = mount(PublicCvView);
     await flushPromises();
 
-    expect(getPublicCv).toHaveBeenCalledWith("alice", "backend-cv");
+    expect(getPublicCv).toHaveBeenCalledWith("alice@example.com", "backend-cv");
     expect(wrapper.get("[data-testid=public-cv-title]").text()).toContain("Backend CV");
 
     const renderer = wrapper.getComponent({ name: "CvTemplateRendererStub" });

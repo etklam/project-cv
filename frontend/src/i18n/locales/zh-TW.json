@@ -132,7 +132,7 @@
     "slug": "網址識別碼",
     "slugPlaceholder": "url-friendly-slug",
     "slugDescription": "公開履歷的自訂網址",
-    "slugHint": "公開路徑：/u/{username}/{slug}",
+    "slugHint": "公開路徑：/u/{email}/{slug}",
     "saveMetadata": "儲存詳情",
     "saving": "儲存中...",
     "saved": "儲存成功",
@@ -274,7 +274,7 @@
     "notFound": "頁面未找到",
     "backToProfile": "返回個人資料",
     "shareLink": "分享此履歷",
-    "cvOwner": " @{username}"
+    "cvOwner": " {email}"
   },
   "errors": {
     "general": "出錯了，請重試。",

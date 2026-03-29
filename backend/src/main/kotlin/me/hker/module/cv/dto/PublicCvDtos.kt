@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import java.time.LocalDateTime
 
 data class PublicProfileUserDto(
-    val username: String,
+    val email: String,
     val displayName: String,
     val avatarPath: String?,
 )

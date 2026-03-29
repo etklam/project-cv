@@ -22,7 +22,7 @@ data class CvDetailDto(
     val templateKey: String,
     val isPublic: Boolean,
     val slug: String?,
-    val username: String?,
+    val email: String,
     val updatedAt: LocalDateTime?,
 )
 

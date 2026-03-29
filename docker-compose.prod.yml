@@ -47,6 +47,7 @@ services:
       context: ./frontend
     environment:
       VITE_PROXY_TARGET: http://backend:8080
+      BACKEND_UPSTREAM: ${APP_BACKEND_UPSTREAM:-backend:8080}
     depends_on:
       backend:
         condition: service_healthy
