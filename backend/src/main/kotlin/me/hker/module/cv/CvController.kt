@@ -5,6 +5,7 @@ import me.hker.common.R
 import me.hker.module.cv.dto.CreateCvRequest
 import me.hker.module.cv.dto.CvDetailResponse
 import me.hker.module.cv.dto.CvListResponse
+import me.hker.module.cv.dto.SaveCvDraftRequest
 import me.hker.module.cv.dto.UpdateCvSectionsRequest
 import me.hker.module.cv.dto.UpdateCvRequest
 import me.hker.module.cv.service.CvService
@@ -68,6 +69,16 @@ class CvController(
     ): R<CvDetailResponse> {
         val resolvedUserId = currentUserResolver.resolve(userId)
         return R.ok(cvService.updateSections(resolvedUserId, cvId, request))
+    }
+
+    @PutMapping("/{cvId}/draft")
+    fun saveDraft(
+        @RequestHeader(name = "X-User-Id", required = false) userId: Long?,
+        @PathVariable cvId: Long,
+        @RequestBody request: SaveCvDraftRequest,
+    ): R<CvDetailResponse> {
+        val resolvedUserId = currentUserResolver.resolve(userId)
+        return R.ok(cvService.saveDraft(resolvedUserId, cvId, request))
     }
 
     @DeleteMapping("/{cvId}")

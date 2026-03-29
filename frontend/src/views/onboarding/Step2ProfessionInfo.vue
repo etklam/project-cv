@@ -2,9 +2,12 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useAuthStore } from "@/stores/auth";
+import { skipStep2, submitStep2 } from "@/api/onboarding";
 
 const { t } = useI18n();
 const router = useRouter();
+const auth = useAuthStore();
 
 const form = ref({
   industry: "Technology & Software",
@@ -19,6 +22,8 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   loading.value = true;
   try {
+    const data = await submitStep2(form.value);
+    auth.applyUser(data.user);
     router.push("/onboarding/step3");
   } catch (err) {
     console.error(err);
@@ -27,7 +32,9 @@ const handleSubmit = async (e) => {
   }
 };
 
-const handleSkip = () => {
+const handleSkip = async () => {
+  const data = await skipStep2();
+  auth.applyUser(data.user);
   router.push("/onboarding/step3");
 };
 </script>

@@ -43,10 +43,12 @@ class AuthControllerContractTest(@Autowired private val mockMvc: MockMvc) {
             AuthUserDto(
                 id = 1L,
                 email = "alice@example.com",
+                username = "alice",
                 displayName = "Alice",
                 locale = "zh-TW",
                 creditBalance = 50,
                 inviteCode = "INV-ALICE1",
+                onboardingStatus = "STEP_1",
             ),
         )
 
@@ -66,10 +68,12 @@ class AuthControllerContractTest(@Autowired private val mockMvc: MockMvc) {
             AuthUserDto(
                 id = 1L,
                 email = "alice@example.com",
+                username = "alice",
                 displayName = "Alice",
                 locale = "en",
                 creditBalance = 50,
                 inviteCode = "INV-ALICE1",
+                onboardingStatus = "STEP_1",
             ),
         )
 

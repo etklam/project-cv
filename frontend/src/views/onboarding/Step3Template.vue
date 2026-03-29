@@ -3,10 +3,13 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import TemplateCard from "@/components/templates/TemplateCard.vue";
+import { useAuthStore } from "@/stores/auth";
+import { submitStep3 } from "@/api/onboarding";
 import { useTemplateCatalog } from "@/composables/useTemplateCatalog";
 
 const { t } = useI18n();
 const router = useRouter();
+const auth = useAuthStore();
 
 const selectedTemplateKey = ref(null);
 const loading = ref(false);
@@ -37,6 +40,8 @@ const handleSubmit = async () => {
   loading.value = true;
   error.value = "";
   try {
+    const data = await submitStep3({ templateKey: selectedTemplateKey.value });
+    auth.applyUser(data.user);
     router.push("/dashboard");
   } catch (err) {
     error.value = err?.response?.data?.message || t("errors.general");

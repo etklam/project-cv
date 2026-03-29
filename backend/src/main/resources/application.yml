@@ -36,3 +36,9 @@ app:
     invite:
       inviter-bonus: ${APP_REWARD_INVITE_INVITER_BONUS:20}
       invitee-bonus: ${APP_REWARD_INVITE_INVITEE_BONUS:20}
+  auth:
+    cookie:
+      secure: ${APP_AUTH_COOKIE_SECURE:false}
+      same-site: ${APP_AUTH_COOKIE_SAME_SITE:Lax}
+      path: ${APP_AUTH_COOKIE_PATH:/api}
+      max-age-days: ${APP_AUTH_COOKIE_MAX_AGE_DAYS:7}

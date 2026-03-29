@@ -3,7 +3,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CvEditorView from "@/views/editor/CvEditorView.vue";
 import { exportCvPdf } from "@/api/export";
-import { getCv, updateCv, updateSections } from "@/api/cv";
+import { getCv, saveCvDraft, updateCv, updateSections } from "@/api/cv";
 import { listTemplates } from "@/api/template";
 
 const routeParams = { id: "11" };
@@ -14,6 +14,7 @@ vi.mock("vue-router", () => ({
 
 vi.mock("@/api/cv", () => ({
   getCv: vi.fn(),
+  saveCvDraft: vi.fn(),
   updateCv: vi.fn(),
   updateSections: vi.fn(),
 }));
@@ -163,6 +164,17 @@ describe("CvEditorView", () => {
       },
       sections: [],
     });
+    vi.mocked(saveCvDraft).mockResolvedValue({
+      cv: {
+        id: 11,
+        title: "Updated CV",
+        templateKey: "modern",
+        isPublic: true,
+        slug: "my-cv-2026",
+        username: "ada",
+      },
+      sections: [],
+    });
 
     const wrapper = mountEditor();
     await flushPromises();
@@ -180,11 +192,12 @@ describe("CvEditorView", () => {
     await vi.advanceTimersByTimeAsync(800);
     await flushPromises();
 
-    expect(updateCv).toHaveBeenCalledWith("11", {
+    expect(saveCvDraft).toHaveBeenCalledWith("11", {
       title: "Updated CV",
       templateKey: "modern",
       isPublic: true,
       slug: "my-cv-2026",
+      sections: [],
     });
     expect(wrapper.get("[data-testid=editor-autosave-status]").text()).toContain("Autosaved");
     expect(wrapper.get("[data-testid=editor-autosave-status]").text()).toContain("just now");
@@ -208,6 +221,7 @@ describe("CvEditorView", () => {
         templateKey: "modern",
         isPublic: true,
         slug: "my-cv-2026",
+        username: "ada",
       },
       sections: [],
     });

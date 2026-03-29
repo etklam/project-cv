@@ -30,13 +30,15 @@ class SecurityConfig(
                     "/api/v1/auth/logout",
                     "/api/v1/public/**",
                     "/api/v1/templates",
+                    "/api/v1/export/print/**",
                 ).permitAll()
                 it.requestMatchers(
                     "/api/v1/auth/me",
                     "/api/v1/auth/change-locale",
                     "/api/v1/me/**",
                 ).authenticated()
-                it.anyRequest().permitAll()
+                it.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                it.anyRequest().authenticated()
             }
             .httpBasic(Customizer.withDefaults())
             .exceptionHandling {

@@ -12,6 +12,7 @@ import me.hker.module.cv.dto.CvDetailResponse
 import me.hker.module.cv.dto.CvSectionDto
 import me.hker.module.cv.dto.CvSectionPayload
 import me.hker.module.cv.dto.CvSummaryDto
+import me.hker.module.cv.dto.SaveCvDraftRequest
 import me.hker.module.cv.dto.UpdateCvSectionsRequest
 import me.hker.module.cv.dto.UpdateCvRequest
 import me.hker.module.cv.entity.Cv
@@ -20,6 +21,7 @@ import me.hker.module.cv.mapper.CvMapper
 import me.hker.module.cv.mapper.CvSectionMapper
 import me.hker.module.cv.service.CvService
 import me.hker.module.template.service.TemplateService
+import me.hker.module.user.service.UserService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -32,6 +34,7 @@ class CvServiceImpl(
     private val creditService: CreditService,
     private val appBusinessProperties: AppBusinessProperties,
     private val objectMapper: ObjectMapper,
+    private val userService: UserService,
 ) : CvService {
     override fun listByUser(userId: Long): List<CvSummaryDto> =
         cvMapper.selectList(
@@ -128,6 +131,21 @@ class CvServiceImpl(
         return buildCvDetail(findOwnedCv(userId, cvId))
     }
 
+    override fun saveDraft(userId: Long, cvId: Long, request: SaveCvDraftRequest): CvDetailResponse {
+        updateMetadata(
+            userId,
+            cvId,
+            UpdateCvRequest(
+                title = request.title,
+                templateKey = request.templateKey,
+                isPublic = request.isPublic,
+                slug = request.slug,
+            ),
+        )
+        replaceSections(cvId, request.sections)
+        return buildCvDetail(findOwnedCv(userId, cvId))
+    }
+
     override fun delete(userId: Long, cvId: Long) {
         val cv = findOwnedCv(userId, cvId)
         cv.isDeleted = true
@@ -166,6 +184,7 @@ class CvServiceImpl(
 
     private fun buildCvDetail(cv: Cv): CvDetailResponse {
         val cvId = cv.id ?: throw ResourceNotFoundException("cv not found")
+        val username = userService.findById(cv.userId ?: 0L)?.username
         val sections = cvSectionMapper.selectList(
             QueryWrapper<CvSection>()
                 .eq("cv_id", cvId)
@@ -180,6 +199,7 @@ class CvServiceImpl(
                 templateKey = cv.templateKey,
                 isPublic = cv.isPublic,
                 slug = cv.slug,
+                username = username,
                 updatedAt = cv.updatedAt,
             ),
             sections = sections.map { section ->

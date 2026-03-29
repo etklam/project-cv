@@ -30,22 +30,24 @@ class AuthServiceImpl(
 ) : AuthService {
 
     override fun writeAuthCookie(response: HttpServletResponse, token: String) {
+        val cookieProperties = appBusinessProperties.auth.cookie
         val cookie = ResponseCookie.from("token", token)
             .httpOnly(true)
-            .secure(false)
-            .sameSite("Lax")
-            .path("/api")
-            .maxAge(Duration.ofDays(7))
+            .secure(cookieProperties.secure)
+            .sameSite(cookieProperties.sameSite)
+            .path(cookieProperties.path)
+            .maxAge(Duration.ofDays(cookieProperties.maxAgeDays))
             .build()
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())
     }
 
     override fun clearAuthCookie(response: HttpServletResponse) {
+        val cookieProperties = appBusinessProperties.auth.cookie
         val cookie = ResponseCookie.from("token", "")
             .httpOnly(true)
-            .secure(false)
-            .sameSite("Lax")
-            .path("/api")
+            .secure(cookieProperties.secure)
+            .sameSite(cookieProperties.sameSite)
+            .path(cookieProperties.path)
             .maxAge(Duration.ZERO)
             .build()
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString())

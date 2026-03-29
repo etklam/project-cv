@@ -27,7 +27,7 @@ class InviteCodeRewardRedemptionServiceImpl(
         require(invitee.inviteCode != normalizedCode) { "cannot redeem your own invite code" }
 
         // Use pessimistic lock on inviter to prevent race conditions
-        val inviter = userMapper.selectForUpdate(invitee.inviteCode)
+        val inviter = userMapper.selectForUpdate(normalizedCode)
             ?: throw IllegalArgumentException("reward code is invalid")
 
         val existingInviteRedemptionCount = inviteCodeRedemptionMapper.selectCount(

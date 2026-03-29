@@ -8,6 +8,7 @@ data class AppBusinessProperties(
     val reward: Reward = Reward(),
     val upload: Upload = Upload(),
     val export: Export = Export(),
+    val auth: Auth = Auth(),
 ) {
     data class Credit(
         val signUpBonus: Int = 50,
@@ -32,4 +33,15 @@ data class AppBusinessProperties(
         val rendererBaseUrl: String = "http://localhost:3100",
         val frontendBaseUrl: String = "http://localhost:5173",
     )
+
+    data class Auth(
+        val cookie: Cookie = Cookie(),
+    ) {
+        data class Cookie(
+            val secure: Boolean = false,
+            val sameSite: String = "Lax",
+            val path: String = "/api",
+            val maxAgeDays: Long = 7,
+        )
+    }
 }

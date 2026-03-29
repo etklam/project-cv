@@ -7,10 +7,12 @@ fun User.toDto(): AuthUserDto {
     return AuthUserDto(
         id = id,
         email = email,
+        username = username,
         displayName = displayName,
         locale = locale,
         creditBalance = creditBalance,
         inviteCode = inviteCode,
+        onboardingStatus = onboardingStatus,
         role = role,
     )
 }

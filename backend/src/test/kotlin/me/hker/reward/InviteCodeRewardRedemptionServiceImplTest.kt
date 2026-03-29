@@ -7,6 +7,7 @@ import me.hker.module.reward.entity.InviteCodeRedemption
 import me.hker.module.reward.mapper.InviteCodeRedemptionMapper
 import me.hker.module.reward.service.impl.InviteCodeRewardRedemptionServiceImpl
 import me.hker.module.user.entity.User
+import me.hker.module.user.mapper.UserMapper
 import me.hker.module.user.service.UserService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -23,6 +24,7 @@ class InviteCodeRewardRedemptionServiceImplTest {
     private val userService = mock<UserService>()
     private val creditService = mock<CreditService>()
     private val inviteCodeRedemptionMapper = mock<InviteCodeRedemptionMapper>()
+    private val userMapper = mock<UserMapper>()
     private val businessProperties = AppBusinessProperties(
         reward = AppBusinessProperties.Reward(
             invite = AppBusinessProperties.Reward.Invite(
@@ -36,6 +38,7 @@ class InviteCodeRewardRedemptionServiceImplTest {
         userService = userService,
         creditService = creditService,
         inviteCodeRedemptionMapper = inviteCodeRedemptionMapper,
+        userMapper = userMapper,
         businessProperties = businessProperties,
     )
 
@@ -68,7 +71,7 @@ class InviteCodeRewardRedemptionServiceImplTest {
                 creditBalance = 50,
             ),
         )
-        whenever(userService.findByInviteCode("INV-BOB001")).thenReturn(
+        whenever(userMapper.selectForUpdate("INV-BOB001")).thenReturn(
             user(
                 id = 2L,
                 displayName = "Bob",

@@ -68,7 +68,7 @@ const router = createRouter({
     { path: "/register", component: RegisterView },
     { path: "/dashboard", component: DashboardView, meta: { requiresAuth: true } },
     { path: "/editor/:id", component: CvEditorView, meta: { requiresAuth: true } },
-    { path: "/print/cvs/:id", component: PrintCvView, meta: { requiresAuth: true } },
+    { path: "/print/cvs/:id", component: PrintCvView },
     { path: "/u/:username", component: PublicProfileView },
     { path: "/u/:username/:slug", component: PublicCvView },
     {

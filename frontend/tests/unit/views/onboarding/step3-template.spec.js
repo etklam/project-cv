@@ -3,12 +3,24 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import Step3Template from "@/views/onboarding/Step3Template.vue";
 import { listTemplates } from "@/api/template";
 
+const push = vi.fn();
+const applyUser = vi.fn();
+const submitStep3 = vi.fn();
+
 vi.mock("vue-router", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push }),
 }));
 
 vi.mock("@/api/template", () => ({
   listTemplates: vi.fn(),
+}));
+
+vi.mock("@/stores/auth", () => ({
+  useAuthStore: () => ({ applyUser }),
+}));
+
+vi.mock("@/api/onboarding", () => ({
+  submitStep3: (...args) => submitStep3(...args),
 }));
 
 vi.mock("@/components/templates/TemplateCard.vue", () => ({
@@ -24,6 +36,7 @@ describe("Step3Template", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(listTemplates).mockResolvedValue({ templates: [] });
+    submitStep3.mockResolvedValue({ user: { onboarding_status: "DONE" } });
   });
 
   it("renders featured templates and selects the first item", async () => {
@@ -54,5 +67,22 @@ describe("Step3Template", () => {
     expect(wrapper.get("[data-testid=templates-error]").text()).toContain(
       "Failed to load templates",
     );
+  });
+
+  it("submits the selected template and routes to dashboard", async () => {
+    vi.mocked(listTemplates).mockResolvedValue({
+      templates: [
+        { key: "minimal", displayName: "Minimal", description: "Minimal desc", creditCost: 0 },
+      ],
+    });
+
+    const wrapper = mount(Step3Template);
+    await flushPromises();
+    await wrapper.get("button").trigger("click");
+    await flushPromises();
+
+    expect(submitStep3).toHaveBeenCalledWith({ templateKey: "minimal" });
+    expect(applyUser).toHaveBeenCalledWith({ onboarding_status: "DONE" });
+    expect(push).toHaveBeenCalledWith("/dashboard");
   });
 });

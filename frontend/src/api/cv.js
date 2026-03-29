@@ -7,3 +7,5 @@ export const updateCv = async (id, payload) => unwrap(await client.put(`/me/cvs/
 export const deleteCv = async (id) => unwrap(await client.delete(`/me/cvs/${id}`));
 export const updateSections = async (id, payload) =>
   unwrap(await client.put(`/me/cvs/${id}/sections`, payload));
+export const saveCvDraft = async (id, payload) =>
+  unwrap(await client.put(`/me/cvs/${id}/draft`, payload));

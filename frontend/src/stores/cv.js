@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { getCv, updateCv, updateSections } from "@/api/cv";
+import { getCv, saveCvDraft, updateCv, updateSections } from "@/api/cv";
 
 export const useCvStore = defineStore("cv", {
   state: () => ({
@@ -69,6 +69,22 @@ export const useCvStore = defineStore("cv", {
       } catch (requestError) {
         this.error =
           requestError?.response?.data?.message || requestError?.message || "Failed to update sections";
+        throw requestError;
+      } finally {
+        this.saving = false;
+      }
+    },
+    async saveDraft(cvId, draftPayload) {
+      this.saving = true;
+      this.error = "";
+      try {
+        const payload = await saveCvDraft(cvId, draftPayload);
+        this.currentCv = payload?.cv || this.currentCv;
+        this.sections = payload?.sections || this.sections;
+        return payload;
+      } catch (requestError) {
+        this.error =
+          requestError?.response?.data?.message || requestError?.message || "Failed to save draft";
         throw requestError;
       } finally {
         this.saving = false;

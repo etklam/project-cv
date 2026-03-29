@@ -1,6 +1,7 @@
 package me.hker.integration
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -31,10 +32,10 @@ class PublicCvPostgresIntegrationTest : PostgresIntegrationTestSupport() {
             String::class.java,
         )
 
-        assertEquals(
-            listOf("B11__baseline_schema.sql"),
-            appliedScripts,
-            "Fresh databases should prefer the clean baseline migration",
+        assertEquals("B11__baseline_schema.sql", appliedScripts.first())
+        assertTrue(
+            appliedScripts.contains("V12__add_user_role.sql"),
+            "Fresh databases should bootstrap from the baseline and still apply later migrations",
         )
 
         mockMvc.get("/api/v1/public/alice")

@@ -22,6 +22,7 @@ data class CvDetailDto(
     val templateKey: String,
     val isPublic: Boolean,
     val slug: String?,
+    val username: String?,
     val updatedAt: LocalDateTime?,
 )
 
@@ -54,5 +55,13 @@ data class UpdateCvRequest(
 )
 
 data class UpdateCvSectionsRequest(
+    val sections: List<CvSectionPayload>,
+)
+
+data class SaveCvDraftRequest(
+    val title: String? = null,
+    val templateKey: String? = null,
+    val isPublic: Boolean? = null,
+    val slug: String? = null,
     val sections: List<CvSectionPayload>,
 )

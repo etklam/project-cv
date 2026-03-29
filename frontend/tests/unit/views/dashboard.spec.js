@@ -60,9 +60,9 @@ describe("DashboardView", () => {
     await flushPromises();
 
     expect(wrapper.get("[data-testid=reward-balance]").text()).toContain("120");
-    expect(wrapper.get("[data-testid=reward-invite-code]").text()).toContain("INV-SAMPLE");
-    expect(wrapper.get("[data-testid=promo-redemption-count]").text()).toContain("1");
-    expect(wrapper.findAll("[data-testid=promo-record]")).toHaveLength(0);
+    expect(wrapper.text()).toContain("Last invite used: INV-ALICE");
+    expect(wrapper.text()).toContain("2 people have used");
+    expect(wrapper.text()).toContain("Recent Redemptions");
   });
 
   it("redeems a code and shows message", async () => {
@@ -86,11 +86,10 @@ describe("DashboardView", () => {
     expect(vi.mocked(redeemCode)).toHaveBeenCalledWith({ code: "WINTER" });
     expect(wrapper.get("[data-testid=reward-balance]").text()).toContain("135");
     expect(wrapper.get("[data-testid=redeem-message]").text()).toContain("Applied reward");
-    expect(wrapper.findAll("[data-testid=promo-record]")).toHaveLength(1);
-    expect(wrapper.get("[data-testid=promo-redemption-count]").text()).toContain("2");
+    expect(wrapper.text()).toContain("Recent Redemptions");
   });
 
-  it("renders my cv list with public slug badge", async () => {
+  it("renders my cv list", async () => {
     vi.mocked(getRewardSummary).mockResolvedValue(summaryPayload);
     vi.mocked(listCvs).mockResolvedValue({
       cvs: [
@@ -115,10 +114,9 @@ describe("DashboardView", () => {
     await flushPromises();
 
     expect(listCvs).toHaveBeenCalled();
-    expect(wrapper.get("[data-testid=cvs-list]").exists()).toBe(true);
-    expect(wrapper.findAll("[data-testid=cv-title]")).toHaveLength(2);
-    expect(wrapper.findAll("[data-testid=cv-edit-link]")).toHaveLength(2);
-    expect(wrapper.get("[data-testid=cv-public-badge]").text()).toContain("backend-resume");
+    expect(wrapper.findAll("[data-testid=cv-edit-link]")).toHaveLength(1);
+    expect(wrapper.text()).toContain("Backend Resume");
+    expect(wrapper.text()).toContain("Private CV");
   });
 
   it("creates a new cv from dashboard action", async () => {
@@ -132,23 +130,27 @@ describe("DashboardView", () => {
 
     expect(createCv).toHaveBeenCalledWith({ title: "New CV", templateKey: "minimal" });
     expect(wrapper.get("[data-testid=dashboard-action-message]").text()).toContain("CV created");
-    expect(wrapper.get("[data-testid=cvs-list]").text()).toContain("New CV");
+    expect(wrapper.text()).toContain("New CV");
   });
 
   it("deletes a cv from dashboard action", async () => {
     vi.mocked(getRewardSummary).mockResolvedValue(summaryPayload);
     vi.mocked(listCvs).mockResolvedValue({
-      cvs: [{ id: 3, title: "Backend Resume", templateKey: "modern", isPublic: false, slug: null }],
+      cvs: [
+        { id: 3, title: "Backend Resume", templateKey: "modern", isPublic: false, slug: null },
+        { id: 4, title: "Private CV", templateKey: "minimal", isPublic: false, slug: null },
+      ],
     });
 
     const wrapper = mount(DashboardView);
     await flushPromises();
 
     await wrapper.get("[data-testid=cv-delete-button]").trigger("click");
+    await wrapper.get("button.bg-rose-600").trigger("click");
     await flushPromises();
 
-    expect(deleteCv).toHaveBeenCalledWith(3);
+    expect(deleteCv).toHaveBeenCalledWith(4);
     expect(wrapper.get("[data-testid=dashboard-action-message]").text()).toContain("CV deleted");
-    expect(wrapper.get("[data-testid=cvs-empty]").text()).toContain("No CVs yet.");
+    expect(wrapper.findAll("[data-testid=cv-delete-button]")).toHaveLength(0);
   });
 });

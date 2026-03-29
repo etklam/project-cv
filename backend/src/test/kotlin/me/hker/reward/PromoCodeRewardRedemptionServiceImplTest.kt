@@ -53,7 +53,7 @@ class PromoCodeRewardRedemptionServiceImplTest {
                 creditBalance = 50,
             ),
         )
-        whenever(promoCodeMapper.selectOne(any<QueryWrapper<PromoCode>>())).thenReturn(promoCode)
+        whenever(promoCodeMapper.selectForUpdate(any<QueryWrapper<PromoCode>>())).thenReturn(promoCode)
         whenever(promoCodeRedemptionMapper.selectCount(any<QueryWrapper<PromoCodeRedemption>>())).thenReturn(0, 3)
         whenever(creditService.getBalance(1L)).thenReturn(80)
 

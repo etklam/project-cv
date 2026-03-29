@@ -6,6 +6,7 @@ export function useEditorAutosave(saveHandler, options = {}) {
   const error = ref("");
   const lastSavedAt = ref("");
   let timer = null;
+  let rerunRequested = false;
 
   const clearQueue = () => {
     if (timer) {
@@ -15,6 +16,10 @@ export function useEditorAutosave(saveHandler, options = {}) {
   };
 
   const runSave = async () => {
+    if (saving.value) {
+      rerunRequested = true;
+      return;
+    }
     clearQueue();
     saving.value = true;
     error.value = "";
@@ -29,6 +34,10 @@ export function useEditorAutosave(saveHandler, options = {}) {
       throw requestError;
     } finally {
       saving.value = false;
+      if (rerunRequested) {
+        rerunRequested = false;
+        queueAutosave();
+      }
     }
   };
 

@@ -116,6 +116,8 @@ const i18n = createI18n({
         redeemSuccess: "Code redeemed successfully",
         redeemError: "Invalid or unavailable code",
         lastInviteUsage: "Last invite used: {code}",
+        confirmDelete: "Delete this CV?",
+        confirmDeleteMessage: "This will remove {title} from your workspace.",
       },
       editor: {
         title: "Edit CV",
@@ -206,6 +208,10 @@ const i18n = createI18n({
         modern: {
           name: "Modern",
           description: "Contemporary design with gradient",
+        },
+        undefined: {
+          name: "Template",
+          description: "Template preview",
         },
         creditCost: "Costs {cost} credits",
         free: "Free",

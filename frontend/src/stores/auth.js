@@ -28,6 +28,20 @@ export const useAuthStore = defineStore("auth", {
     role: (state) => state.user?.role || "USER",
   },
   actions: {
+    applyUser(user) {
+      this.user = user || null;
+      this.isLoggedIn = Boolean(user);
+
+      const serverLocale = user?.locale;
+      if (serverLocale) {
+        this.locale = serverLocale;
+        safeSetLocale(serverLocale);
+        i18n.global.locale.value = serverLocale;
+        return;
+      }
+
+      i18n.global.locale.value = this.locale;
+    },
     reset() {
       this.user = null;
       this.isLoggedIn = false;
@@ -37,16 +51,7 @@ export const useAuthStore = defineStore("auth", {
     async bootstrap() {
       try {
         const data = await me();
-        this.user = data.user;
-        this.isLoggedIn = true;
-        const serverLocale = data.user?.locale;
-        if (serverLocale) {
-          this.locale = serverLocale;
-          safeSetLocale(serverLocale);
-          i18n.global.locale.value = serverLocale;
-        } else {
-          i18n.global.locale.value = this.locale;
-        }
+        this.applyUser(data.user);
       } catch (_error) {
         this.user = null;
         this.isLoggedIn = false;
@@ -62,22 +67,22 @@ export const useAuthStore = defineStore("auth", {
 
       if (this.isLoggedIn) {
         const data = await changeLocale({ locale });
-        this.user = {
+        this.applyUser({
           ...this.user,
           ...data.user,
-        };
+        });
       }
     },
     async login(payload) {
       const data = await login(payload);
-      this.user = data.user;
-      this.isLoggedIn = true;
+      this.applyUser(data.user);
+      this.initialized = true;
       return data;
     },
     async register(payload) {
       const data = await register(payload);
-      this.user = data.user;
-      this.isLoggedIn = true;
+      this.applyUser(data.user);
+      this.initialized = true;
       return data;
     },
     async logout() {

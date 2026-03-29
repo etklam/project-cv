@@ -17,6 +17,7 @@ import me.hker.module.cv.mapper.CvSectionMapper
 import me.hker.module.cv.service.impl.CvServiceImpl
 import me.hker.module.template.dto.TemplateDto
 import me.hker.module.template.service.TemplateService
+import me.hker.module.user.service.UserService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -35,6 +36,7 @@ class CvServiceTest {
     private val cvSectionMapper = mock<CvSectionMapper>()
     private val templateService = mock<TemplateService>()
     private val creditService = mock<CreditService>()
+    private val userService = mock<UserService>()
     private val service = CvServiceImpl(
         cvMapper = cvMapper,
         cvSectionMapper = cvSectionMapper,
@@ -42,6 +44,7 @@ class CvServiceTest {
         creditService = creditService,
         appBusinessProperties = AppBusinessProperties(),
         objectMapper = jacksonObjectMapper(),
+        userService = userService,
     )
 
     @Test

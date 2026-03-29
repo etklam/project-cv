@@ -52,8 +52,7 @@ const {
 } = useTemplateCatalog();
 
 const autosave = useEditorAutosave(async () => {
-  await saveMetadata({ silent: true });
-  await saveSections({ silent: true });
+  await saveDraft({ silent: true });
 }, { delay: 800 });
 
 function hydrateDraft(cv, sections) {
@@ -72,10 +71,9 @@ function resetContact() {
 
 const activeCv = computed(() => buildPreviewCv(editorDraft.value, cvStore.currentCv || {}));
 const previewSections = computed(() => buildSectionsPayload(editorDraft.value).sections);
-const currentUser = computed(() => cvStore.currentCv?.user || {});
 const publicPath = computed(() => {
   if (activeCv.value?.isPublic && activeCv.value?.slug) {
-    const username = currentUser.value?.username || "{username}";
+    const username = cvStore.currentCv?.username || "{username}";
     return `/u/${username}/${activeCv.value.slug}`;
   }
   return "";
@@ -145,6 +143,31 @@ async function saveSections(options = {}) {
   }
 }
 
+async function saveDraft(options = {}) {
+  loadError.value = "";
+  const payload = {
+    ...buildMetadataPayload(editorDraft.value),
+    sections: buildSectionsPayload(editorDraft.value).sections,
+  };
+
+  if (!payload.title) {
+    loadError.value = t("editor.validation.titleRequired");
+    throw new Error(loadError.value);
+  }
+
+  if (payload.isPublic && !payload.slug) {
+    loadError.value = t("editor.validation.publicSlugRequired");
+    throw new Error(loadError.value);
+  }
+
+  await cvStore.saveDraft(cvId.value, payload);
+
+  if (!options.silent) {
+    saveMessage.value = t("editor.saved");
+    sectionsMessage.value = t("editor.sectionsSaved");
+  }
+}
+
 async function exportPdf() {
   exportMessage.value = "";
   exportError.value = "";
@@ -165,18 +188,12 @@ function zoomOut() {
   previewZoom.value = Math.max(previewZoom.value - 5, 50);
 }
 
-watch(
-  () => JSON.stringify({
-    metadata: buildMetadataPayload(editorDraft.value),
-    sections: buildSectionsPayload(editorDraft.value).sections,
-  }),
-  () => {
-    if (hydratingDraft.value || !cvId.value) {
-      return;
-    }
-    autosave.queueAutosave();
-  },
-);
+watch(editorDraft, () => {
+  if (hydratingDraft.value || !cvId.value) {
+    return;
+  }
+  autosave.queueAutosave();
+}, { deep: true });
 
 onMounted(() => {
   loadCvMetadata();
@@ -198,7 +215,7 @@ onMounted(() => {
         :export-running="false"
         @update:active-tab="activeTab = $event"
         @export="exportPdf"
-        @publish="saveMetadata"
+        @publish="saveDraft"
       />
 
       <div

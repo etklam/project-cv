@@ -2,6 +2,7 @@ package me.hker.export
 
 import me.hker.common.InsufficientCreditsException
 import me.hker.config.AppBusinessProperties
+import me.hker.module.auth.JwtUtil
 import me.hker.module.credit.service.CreditService
 import me.hker.module.cv.dto.CvDetailDto
 import me.hker.module.cv.dto.CvDetailResponse
@@ -23,10 +24,12 @@ class PdfExportServiceTest {
     private val cvService = mock<CvService>()
     private val creditService = mock<CreditService>()
     private val pdfRendererClient = mock<PdfRendererClient>()
+    private val jwtUtil = mock<JwtUtil>()
     private val service = PdfExportServiceImpl(
         cvService = cvService,
         creditService = creditService,
         pdfRendererClient = pdfRendererClient,
+        jwtUtil = jwtUtil,
         appBusinessProperties = AppBusinessProperties(
             credit = AppBusinessProperties.Credit(pdfExportCost = 15),
             export = AppBusinessProperties.Export(
@@ -53,10 +56,11 @@ class PdfExportServiceTest {
     fun `export does not deduct credits when renderer fails`() {
         whenever(cvService.getById(1L, 3L)).thenReturn(detail(3L))
         whenever(creditService.hasEnoughCredits(1L, 15)).thenReturn(true)
-        whenever(pdfRendererClient.renderPdf("http://frontend:5173/print/cvs/3"))
+        whenever(jwtUtil.generateExportToken(1L, 3L)).thenReturn("signed-export-token")
+        whenever(pdfRendererClient.renderPdf("http://frontend:5173/print/cvs/3?token=signed-export-token"))
             .thenThrow(IllegalStateException("renderer down"))
 
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(RuntimeException::class.java) {
             service.exportPdf(1L, 3L)
         }
 
@@ -68,7 +72,8 @@ class PdfExportServiceTest {
         val pdfBytes = "%PDF-test".toByteArray()
         whenever(cvService.getById(1L, 3L)).thenReturn(detail(3L))
         whenever(creditService.hasEnoughCredits(1L, 15)).thenReturn(true)
-        whenever(pdfRendererClient.renderPdf("http://frontend:5173/print/cvs/3"))
+        whenever(jwtUtil.generateExportToken(1L, 3L)).thenReturn("signed-export-token")
+        whenever(pdfRendererClient.renderPdf("http://frontend:5173/print/cvs/3?token=signed-export-token"))
             .thenReturn(pdfBytes)
 
         val result = service.exportPdf(1L, 3L)
@@ -84,6 +89,7 @@ class PdfExportServiceTest {
             templateKey = "minimal",
             isPublic = false,
             slug = null,
+            username = "alice",
             updatedAt = LocalDateTime.of(2026, 3, 28, 12, 0),
         ),
         sections = emptyList(),

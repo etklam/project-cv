@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth";
+import { submitStep1 } from "@/api/onboarding";
 import { checkUsername } from "@/api/user";
 
 const { t } = useI18n();
@@ -58,7 +59,11 @@ const handleSubmit = async (e) => {
 
   loading.value = true;
   try {
-    await auth.setLocale(auth.locale);
+    const data = await submitStep1({
+      displayName: form.value.displayName.trim(),
+      username: form.value.username.trim(),
+    });
+    auth.applyUser(data.user);
     router.push("/onboarding/step2");
   } catch (err) {
     error.value = err?.response?.data?.message || t("errors.general");
@@ -68,6 +73,10 @@ const handleSubmit = async (e) => {
 };
 
 const handleSkip = async () => {
+  if (!form.value.username.trim()) {
+    error.value = t("onboarding.usernameTaken");
+    return;
+  }
   router.push("/onboarding/step2");
 };
 </script>

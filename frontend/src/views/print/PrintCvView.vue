@@ -3,11 +3,13 @@ import { onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { getCv } from "@/api/cv";
+import { getExportCv } from "@/api/export";
 import CvTemplateRenderer from "@/components/cv-templates/CvTemplateRenderer.vue";
 
 const { t } = useI18n();
 const route = useRoute();
 const cvId = route?.params?.id;
+const exportToken = route?.query?.token;
 
 const loading = ref(true);
 const error = ref("");
@@ -16,7 +18,9 @@ const sections = ref([]);
 
 onMounted(async () => {
   try {
-    const payload = await getCv(cvId);
+    const payload = exportToken
+      ? await getExportCv(cvId, exportToken)
+      : await getCv(cvId);
     cv.value = payload?.cv || null;
     sections.value = payload?.sections || [];
   } catch (requestError) {

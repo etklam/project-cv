@@ -2,6 +2,7 @@ package me.hker.credit
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page
+import me.hker.common.InsufficientCreditsException
 import me.hker.module.credit.entity.CreditTransaction
 import me.hker.module.credit.mapper.CreditTransactionMapper
 import me.hker.module.credit.service.impl.CreditServiceImpl
@@ -52,7 +53,7 @@ class CreditServiceImplTest {
         whenever(userMapper.adjustCreditBalanceReturning(1L, -10)).thenReturn(null)
         whenever(userMapper.selectCreditBalance(1L)).thenReturn(5)
 
-        val error = assertThrows(IllegalArgumentException::class.java) {
+        val error = assertThrows(InsufficientCreditsException::class.java) {
             service.deduct(
                 userId = 1L,
                 amount = 10,

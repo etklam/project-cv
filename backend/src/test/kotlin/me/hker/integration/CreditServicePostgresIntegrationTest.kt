@@ -3,6 +3,7 @@ package me.hker.integration
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import me.hker.common.InsufficientCreditsException
 import me.hker.module.credit.service.CreditService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -47,7 +48,7 @@ class CreditServicePostgresIntegrationTest : PostgresIntegrationTestSupport() {
 
     @Test
     fun `deduct should reject insufficient credits on postgres without going negative`() {
-        val error = assertThrows(IllegalArgumentException::class.java) {
+        val error = assertThrows(InsufficientCreditsException::class.java) {
             creditService.deduct(
                 userId = 1L,
                 amount = 80,

@@ -2,6 +2,8 @@ package me.hker.module.export.service.impl
 
 import me.hker.common.InsufficientCreditsException
 import me.hker.config.AppBusinessProperties
+import me.hker.module.auth.JwtUtil
+import me.hker.module.cv.dto.CvDetailResponse
 import me.hker.module.credit.service.CreditService
 import me.hker.module.cv.service.CvService
 import me.hker.module.export.integration.PdfRendererClient
@@ -16,6 +18,7 @@ class PdfExportServiceImpl(
     private val creditService: CreditService,
     private val pdfRendererClient: PdfRendererClient,
     private val appBusinessProperties: AppBusinessProperties,
+    private val jwtUtil: JwtUtil,
 ) : PdfExportService {
     private val logger = LoggerFactory.getLogger(PdfExportServiceImpl::class.java)
 
@@ -29,15 +32,12 @@ class PdfExportServiceImpl(
         }
 
         val pdfBytes = try {
+            val exportToken = jwtUtil.generateExportToken(userId, cvId)
             pdfRendererClient.renderPdf(
-                "${appBusinessProperties.export.frontendBaseUrl.removeSuffix("/")}/print/cvs/$cvId",
+                "${appBusinessProperties.export.frontendBaseUrl.removeSuffix("/")}/print/cvs/$cvId?token=$exportToken",
             )
         } catch (e: Exception) {
             logger.error("PDF generation failed for cvId=$cvId", e)
-            if (exportCost > 0) {
-                // Refund the credits if PDF generation failed
-                creditService.credit(userId, exportCost, "PDF_EXPORT_REFUND", "CV", cvId, "refund failed pdf export")
-            }
             throw RuntimeException("Failed to generate PDF: ${e.message}", e)
         }
 
@@ -46,5 +46,11 @@ class PdfExportServiceImpl(
         }
 
         return pdfBytes
+    }
+
+    override fun getExportCv(token: String, cvId: Long): CvDetailResponse {
+        val userId = jwtUtil.getUserId(token)
+        require(jwtUtil.isExportToken(token, userId, cvId)) { "invalid export token" }
+        return cvService.getById(userId, cvId)
     }
 }
